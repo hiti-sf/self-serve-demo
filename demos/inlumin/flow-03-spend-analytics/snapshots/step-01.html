@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-demo-capture-id="cap_synthetic_f3s1" data-demo-source-url="https://inlumin.demo.internal/analytics/spend" data-demo-captured-at="2026-08-14T09:32:11.000Z" data-demo-viewport="1440x900" data-demo-document="1440x900">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; media-src data:; style-src 'unsafe-inline' data:; font-src data:; frame-src 'none'; script-src 'none'; form-action 'none'">
+<meta charset="utf-8">
+<title>Spend analytics · InLumin</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#212529;background:#f4f5f3}
+.app{display:grid;grid-template-columns:216px 1fr;min-height:900px}
+.side{background:#212529;color:#fff;padding:18px 0 24px}
+.side .brand{padding:0 18px 22px}
+.logo{height:24px;width:132px;display:block}
+.nav{list-style:none;margin:0;padding:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 18px;color:rgba(255,255,255,.72);text-decoration:none;font-size:13px}
+.nav a.on{color:#fff;background:rgba(32,166,118,.18);border-left:3px solid #20A676;padding-left:15px;font-weight:600}
+.nav .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
+.side .org{margin:26px 18px 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:rgba(255,255,255,.5)}
+.main{display:flex;flex-direction:column;background:#f4f5f3}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 26px;background:#fff;border-bottom:1px solid #e6e6e6}
+.crumbs{font-size:12px;color:#6c757d}
+.crumbs b{color:#212529;font-weight:600}
+.top-actions{display:flex;align-items:center;gap:10px}
+.search{width:230px;padding:7px 10px;border:1px solid #e0e0e0;border-radius:6px;font:inherit;font-size:13px;color:#212529;background:#fcfcf5}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1B91A3,#71BF44);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}
+.wrap{padding:22px 26px 30px;flex:1}
+h1{font-size:20px;margin:0 0 4px}
+h2{font-size:15px;margin:0 0 10px}
+.sub{color:#6c757d;font-size:13px;margin:0 0 18px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.btn{font:inherit;font-size:13px;padding:8px 14px;border-radius:6px;border:1px solid transparent;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:#20A676;color:#fff;font-weight:600}
+.btn-outline{background:#fff;border-color:#d5d8d4;color:#212529}
+.btn-ghost{background:transparent;color:#6c757d}
+.btn-sm{font-size:12px;padding:5px 10px}
+.card{background:#fff;border:1px solid #e6e6e6;border-radius:10px}
+.card+.card{margin-top:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e6e6e6}
+.card-h h2{margin:0}
+.card-b{padding:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#6c757d;font-weight:600;padding:10px 16px;background:#fcfcf5;border-bottom:1px solid #e6e6e6}
+td{padding:11px 16px;border-bottom:1px solid #f0f0ee;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.pill-wait{background:#fff4d6;color:#8a6100}
+.pill-ok{background:#e2f5eb;color:#146b4c}
+.pill-open{background:#e4f1f6;color:#0e6468}
+.pill-risk{background:#fdeaea;color:#a02020}
+.muted{color:#6c757d}
+.small{font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.tile{background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:14px 16px}
+.tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6c757d}
+.tile .v{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.tile .d{font-size:12px;margin-top:2px}
+.up{color:#146b4c}
+.down{color:#a02020}
+.field{display:block;margin-bottom:14px}
+.field span{display:block;font-size:12px;color:#6c757d;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid #d5d8d4;border-radius:6px;font:inherit;font-size:13px;background:#fff;color:#212529}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.chk{display:flex;gap:9px;align-items:flex-start;font-size:13px;margin-bottom:10px}
+.bar{height:6px;border-radius:999px;background:#eceee9;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#0F929D,#38AD66,#8BC33F)}
+.modal-scrim{position:fixed;inset:0;background:rgba(16,20,22,.5)}
+.modal{position:fixed;top:96px;left:50%;transform:translateX(-50%);width:620px;background:#fff;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden}
+.modal-h{padding:16px 20px;border-bottom:1px solid #e6e6e6}
+.modal-h h2{margin:0 0 2px}
+.modal-b{padding:18px 20px;max-height:420px;overflow:auto}
+.modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid #e6e6e6;background:#fcfcf5}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.check:last-child{border-bottom:0}
+.tick{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:0 0 18px}
+.tick-ok{background:#20A676}
+.tick-warn{background:#F9B200}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{position:relative;padding:0 0 16px 22px;border-left:2px solid #e6e6e6;font-size:13px}
+.timeline li:last-child{border-left-color:transparent;padding-bottom:0}
+.timeline li:before{content:"";position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#20A676}
+.compare{display:grid;grid-template-columns:170px repeat(3,1fr);gap:0;font-size:13px}
+.compare>div{padding:11px 14px;border-bottom:1px solid #f0f0ee}
+.compare .hd{background:#fcfcf5;font-weight:600;border-bottom:1px solid #e6e6e6}
+.compare .lbl{color:#6c757d}
+.win{background:#f2faf6}
+.chart-frame{border:1px solid #e6e6e6;border-radius:8px;padding:10px;background:#fff}
+.legend{display:flex;gap:16px;font-size:12px;color:#6c757d;margin-top:8px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+</style>
+<style data-demo-player-reset>html{overflow:hidden !important}body{margin:0}*{animation:none !important;transition:none !important;caret-color:transparent !important}</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 132 24" role="img" aria-label="InLumin"><defs><linearGradient id="ilg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0F929D"/><stop offset="0.5" stop-color="#38AD66"/><stop offset="1" stop-color="#8BC33F"/></linearGradient></defs><rect x="0" y="3" width="18" height="18" rx="5" fill="url(#ilg)"/><circle cx="9" cy="12" r="4" fill="#fff"/><text x="26" y="17.5" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#ffffff">InLumin</text></svg></div>
+    <ul class="nav"><li><a href="#" data-nav="dashboard" class=""><span class="dot"></span>Dashboard</a></li><li><a href="#" data-nav="requisitions" class=""><span class="dot"></span>Requisitions</a></li><li><a href="#" data-nav="orders" class=""><span class="dot"></span>Purchase orders</a></li><li><a href="#" data-nav="suppliers" class=""><span class="dot"></span>Suppliers</a></li><li><a href="#" data-nav="invoices" class=""><span class="dot"></span>Invoices</a></li><li><a href="#" data-nav="analytics" class="on"><span class="dot"></span>Analytics</a></li></ul>
+    <div class="org">Strides Pharma · Bengaluru<br>Procurement workspace</div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div class="crumbs">Analytics / <b>Spend</b></div>
+      <div class="top-actions">
+        <input class="search" type="text" value="" placeholder="Search categories, suppliers, contracts" aria-label="Search">
+        
+        <div class="avatar">RI</div>
+      </div>
+    </header>
+    <div class="wrap">
+      <div class="between">
+        <div>
+          <h1>Spend analytics</h1>
+          <p class="sub">Rolling 8 quarters · 5 categories · 43 active suppliers · FY26 to date</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-outline" type="button" data-testid="change-period">Last 8 quarters</button>
+          <button class="btn btn-primary" type="button" id="view-savings" data-testid="view-savings">Savings opportunities</button>
+        </div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><div class="k">Addressable spend</div><div class="v">₹ 5.86Cr</div><div class="d muted">FY26 to date</div></div>
+        <div class="tile"><div class="k">On contract</div><div class="v">83%</div><div class="d up">↑ 9 pts YoY</div></div>
+        <div class="tile"><div class="k">Realised savings</div><div class="v">₹ 41.2L</div><div class="d up">7.0% of spend</div></div>
+        <div class="tile"><div class="k">Maverick spend</div><div class="v">₹ 24.8L</div><div class="d down">↑ ₹ 3.1L QoQ</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Spend by category, by quarter</h2><span class="muted small">Top three categories shown</span></div>
+        <div class="card-b" id="spend-chart"><div class="chart-frame"><img data-demo-replaced="canvas" alt="Quarterly spend by category" width="760" height="260" style="display:block;width:100%;height:auto" src="data:image/png;base64,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"><div class="legend"><span><i style="background:#0F929D"></i>Excipients</span><span><i style="background:#38AD66"></i>Packaging</span><span><i style="background:#8BC33F"></i>Lab consumables</span></div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Categories</h2><span class="muted small">Contract coverage and supplier count</span></div>
+        <table id="category-table">
+          <thead><tr><th>Category</th><th class="num">FY26 spend</th><th class="num">YoY</th>
+            <th class="num">On contract</th><th class="num">Suppliers</th><th></th></tr></thead>
+          <tbody><tr><td><b>Excipients</b></td><td class="num">₹ 2,14,80,000</td><td class="num up">+8.4%</td><td class="num">91%</td><td class="num">4</td><td><button class="btn btn-ghost btn-sm" type="button" data-testid="drill-excipients">Drill down</button></td></tr><tr><td><b>Packaging</b></td><td class="num">₹ 1,48,20,000</td><td class="num up">+3.1%</td><td class="num">86%</td><td class="num">6</td><td><button class="btn btn-ghost btn-sm" type="button" data-testid="drill-packaging">Drill down</button></td></tr><tr><td><b>Lab consumables</b></td><td class="num">₹ 96,40,000</td><td class="num down">-2.7%</td><td class="num">78%</td><td class="num">11</td><td><button class="btn btn-ghost btn-sm" type="button" data-testid="drill-lab-consumables">Drill down</button></td></tr><tr><td><b>Instruments</b></td><td class="num">₹ 72,10,000</td><td class="num up">+14.2%</td><td class="num">62%</td><td class="num">9</td><td><button class="btn btn-ghost btn-sm" type="button" data-testid="drill-instruments">Drill down</button></td></tr><tr><td><b>Maintenance</b></td><td class="num">₹ 54,90,000</td><td class="num up">+1.8%</td><td class="num">71%</td><td class="num">13</td><td><button class="btn btn-ghost btn-sm" type="button" data-testid="drill-maintenance">Drill down</button></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

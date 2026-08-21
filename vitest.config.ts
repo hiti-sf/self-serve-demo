@@ -12,7 +12,7 @@ export default defineConfig({
       'editor/**/*.test.{ts,tsx}',
       'capture-extension/**/*.test.{ts,tsx}',
       'builds/**/*.test.{ts,tsx}',
-      'scripts/**/*.test.{ts,tsx}',
+      'scripts/**/*.test.{ts,mts,tsx}',
     ],
     // Per-file overrides via the `@vitest-environment` docblock.
     environment: 'node',

@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "1.0",
+  "demoId": "inlumin-flow-01",
+  "product": "InLumin",
+  "title": "Requisition to approved PO in under two minutes",
+  "description": "A site planner raises a replenishment requisition, InLumin runs the policy checks, and procurement approves and raises the purchase order without leaving the workflow. All data is synthetic.",
+  "theme": {
+    "primaryColor": "#20A676",
+    "accentColor": "#1B91A3",
+    "logo": "assets/inlumin-logo.svg",
+    "backgroundColor": "#0E1113"
+  },
+  "settings": {
+    "gated": true,
+    "showProgress": true,
+    "showChapterMenu": true,
+    "keyboardNav": true,
+    "idleResetMs": 0
+  },
+  "chapters": [
+    {
+      "chapterId": "ch-01",
+      "title": "Raise the requisition",
+      "steps": [
+        "step-01",
+        "step-02"
+      ]
+    },
+    {
+      "chapterId": "ch-02",
+      "title": "Approve and raise the PO",
+      "steps": [
+        "step-03",
+        "step-04"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepId": "step-01",
+      "snapshot": "snapshots/step-01.html",
+      "fallbackImage": "snapshots/step-01.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": "Requisitions list. Data table screen for the M1 capture set.",
+      "hotspots": [
+        {
+          "hotspotId": "hs-01",
+          "anchor": {
+            "selector": "[data-testid=\"new-requisition\"]",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.925,
+            "y": 0.113
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Everything open, in one queue",
+            "body": "Six live requisitions, two waiting on this approver. Cycle time and off-contract spend are on the same screen — no separate report. Start a new one here.",
+            "position": "left"
+          },
+          "advancesTo": "step-02"
+        }
+      ]
+    },
+    {
+      "stepId": "step-02",
+      "snapshot": "snapshots/step-02.html",
+      "fallbackImage": "snapshots/step-02.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": "Filled form: input values, selected options and checked boxes all survive capture.",
+      "hotspots": [
+        {
+          "hotspotId": "hs-02",
+          "anchor": {
+            "selector": "#line-items",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.775
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Contract pricing applied as you type",
+            "body": "Each line matches against contract CT-2291, so the rate and the amount are the contracted ones. Off-contract lines are flagged before the requisition is ever submitted.",
+            "position": "top"
+          }
+        },
+        {
+          "hotspotId": "hs-03",
+          "anchor": {
+            "selector": "[data-testid=\"submit-for-approval\"]",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.918,
+            "y": 0.113
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Submit for approval",
+            "body": "Routing is derived from cost centre and value — the requester never picks an approver.",
+            "position": "left"
+          },
+          "advancesTo": "step-03"
+        }
+      ]
+    },
+    {
+      "stepId": "step-03",
+      "snapshot": "snapshots/step-03.html",
+      "fallbackImage": "snapshots/step-03.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": "Modal screen for the M1 capture set — open dialog state persists in the snapshot.",
+      "hotspots": [
+        {
+          "hotspotId": "hs-04",
+          "anchor": {
+            "selector": "#approval-modal .modal-b",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.5,
+            "y": 0.411
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Five policy checks, run automatically",
+            "body": "Contract match, budget, supplier qualification, lead time and segregation of duties. The approver sees the one exception rather than re-deriving all five.",
+            "position": "right"
+          }
+        },
+        {
+          "hotspotId": "hs-05",
+          "anchor": {
+            "selector": "#approve-raise-po",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.641,
+            "y": 0.66
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Approve and raise the PO in one action",
+            "body": "Approval and PO creation are the same step, so there is no re-keying between the requisition and the order.",
+            "position": "bottom"
+          },
+          "advancesTo": "step-04"
+        }
+      ]
+    },
+    {
+      "stepId": "step-04",
+      "snapshot": "snapshots/step-04.html",
+      "fallbackImage": "snapshots/step-04.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "hotspots": [
+        {
+          "hotspotId": "hs-06",
+          "anchor": {
+            "selector": ".timeline",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.62
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "The audit trail writes itself",
+            "body": "Every check, acknowledgement and approval is on the PO. This is the artefact an auditor asks for, produced as a by-product of the workflow.",
+            "position": "top"
+          }
+        }
+      ]
+    }
+  ],
+  "endScreen": {
+    "headline": "Requisition to PO in 1.9 days, not 11",
+    "body": "This flow used synthetic data on a demo tenant. The same policy checks run against your contracts, cost centres and delegation limits.",
+    "cta": {
+      "label": "Book a walkthrough",
+      "url": "https://pivotpath.example/inlumin/walkthrough"
+    },
+    "secondaryCta": {
+      "label": "Explore another product",
+      "url": "https://pivotpath.example/products"
+    }
+  }
+}

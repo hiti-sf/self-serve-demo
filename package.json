@@ -21,12 +21,13 @@
     "build:kiosk": "node builds/kiosk/scripts/build-kiosk.mjs",
     "lint:no-external-urls": "node builds/kiosk/scripts/lint-external-urls.mjs",
     "lint:no-secrets": "node scripts/lint-no-secrets.mjs",
-    "validate:demos": "node scripts/validate-demos.mjs",
+    "validate:demos": "tsx scripts/validate-demos.mts",
     "render:fallbacks": "node scripts/render-fallbacks.mjs",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ci": "pnpm typecheck && pnpm test && pnpm validate:demos && pnpm lint:no-secrets"
+    "ci": "pnpm typecheck && pnpm test && pnpm validate:demos && pnpm lint:no-secrets",
+    "smoke:player": "pnpm build:player && node scripts/smoke-player.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.1",
@@ -40,6 +41,7 @@
     "react": "19.0.8",
     "react-dom": "19.0.8",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4"
+    "@types/react-dom": "19.2.4",
+    "tsx": "4.23.12"
   }
 }

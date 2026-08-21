@@ -1,0 +1,171 @@
+{
+  "schemaVersion": "1.0",
+  "demoId": "inlumin-flow-02",
+  "product": "InLumin",
+  "title": "Score four bids and award without a spreadsheet",
+  "description": "Four RFQ responses land, InLumin scores them on one weighted model, and the buyer awards on total cost of risk rather than lowest price. All data is synthetic.",
+  "theme": {
+    "primaryColor": "#20A676",
+    "accentColor": "#1B91A3",
+    "logo": "assets/inlumin-logo.svg",
+    "backgroundColor": "#0E1113"
+  },
+  "settings": {
+    "gated": true,
+    "showProgress": true,
+    "showChapterMenu": true,
+    "keyboardNav": true,
+    "idleResetMs": 0
+  },
+  "chapters": [
+    {
+      "chapterId": "ch-01",
+      "title": "Score the responses",
+      "steps": [
+        "step-01",
+        "step-02"
+      ]
+    },
+    {
+      "chapterId": "ch-02",
+      "title": "Award",
+      "steps": [
+        "step-03"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepId": "step-01",
+      "snapshot": "snapshots/step-01.html",
+      "fallbackImage": "snapshots/step-01.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "hotspots": [
+        {
+          "hotspotId": "hs-01",
+          "anchor": {
+            "selector": "#rfq-responses",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.62
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "One model, every bid",
+            "body": "Price, lead time, quality history and ESG are weighted the same way for all four responses. The cheapest bid is not the highest score, and the buyer can see exactly why.",
+            "position": "top"
+          }
+        },
+        {
+          "hotspotId": "hs-02",
+          "anchor": {
+            "selector": "[data-testid=\"compare-responses\"]",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.925,
+            "y": 0.117
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Compare the shortlist",
+            "body": "Take the top three into a side-by-side view.",
+            "position": "left"
+          },
+          "advancesTo": "step-02"
+        }
+      ]
+    },
+    {
+      "stepId": "step-02",
+      "snapshot": "snapshots/step-02.html",
+      "fallbackImage": "snapshots/step-02.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "hotspots": [
+        {
+          "hotspotId": "hs-03",
+          "anchor": {
+            "selector": "#comparison-grid",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.47
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Total cost of risk, not lowest price",
+            "body": "Vitalis Labs costs ₹ 56,700 more than the cheapest bid and lands nine days earlier with a 0.3% rejection rate. The winning column is highlighted per row, so the trade-off is visible rather than argued.",
+            "position": "right"
+          }
+        },
+        {
+          "hotspotId": "hs-04",
+          "anchor": {
+            "selector": "#award-vitalis",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.905,
+            "y": 0.117
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Award on the contract you already have",
+            "body": "Both top bids sit on CT-2291, so awarding needs no new paper.",
+            "position": "left"
+          },
+          "advancesTo": "step-03"
+        }
+      ]
+    },
+    {
+      "stepId": "step-03",
+      "snapshot": "snapshots/step-03.html",
+      "fallbackImage": "snapshots/step-03.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "hotspots": [
+        {
+          "hotspotId": "hs-05",
+          "anchor": {
+            "selector": "#award-trail",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.66
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "A decision record, not a memory",
+            "body": "Who awarded, on what score, against which weights, with the flagged bid documented. This is what a procurement audit asks for.",
+            "position": "top"
+          }
+        }
+      ]
+    }
+  ],
+  "endScreen": {
+    "headline": "Award decisions in two days, defensible in one screen",
+    "body": "Synthetic data on a demo tenant. The scoring model, weights and audit trail are configured to your category strategy.",
+    "cta": {
+      "label": "Book a walkthrough",
+      "url": "https://pivotpath.example/inlumin/walkthrough"
+    },
+    "secondaryCta": {
+      "label": "Explore another product",
+      "url": "https://pivotpath.example/products"
+    }
+  }
+}
