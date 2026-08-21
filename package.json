@@ -10,7 +10,7 @@
   "scripts": {
     "dev:player": "pnpm --filter @demo-platform/player dev",
     "dev:editor": "pnpm --filter @demo-platform/editor dev",
-    "dev:editor:server": "node editor/server/publish-server.mjs",
+    "dev:editor:server": "tsx editor/server/publish-server.mts",
     "dev:web": "tsx builds/web/server/dev-server.mts",
     "build": "pnpm -r --filter=!@demo-platform/kiosk build",
     "build:shared": "pnpm --filter @demo-platform/shared build",

@@ -64,6 +64,7 @@ the `/api/lead` route records it after the CRM returns a `leadId`.
 | **InLumin flow names** | §12 — "flow names TBD — owner to specify 2–3 core workflows" | Three placeholder flows exist, chosen to exercise the paths §12 calls out (a modal, a data table, a canvas-heavy view). Renaming means renaming the folder and the `demoId`; nothing in the engine depends on either. |
 | **Real captures from the InLumin tenant** | §5, §12 (M1) | The committed snapshots are **hand-authored synthetic stand-ins**, written exactly as the extension writes them. Capture needs live platform access. See [demos/inlumin/README.md](./demos/inlumin/README.md). |
 | **Privacy notice URL** | §8.1 | `VITE_PRIVACY_URL`, currently `/privacy`. |
+| **Server-side abandonment sweep** | §9 — "derived server-side or on sync from session timeout" | Not built, deliberately. The client fires `session_abandoned` three ways (pagehide, visibilitychange, inactivity timeout) and the kiosk fires it on idle reset, all of which are verified. A server-side sweeper needs somewhere to hold open sessions, and v1 has no event store — events are forwarded straight to the CRM. Whether a sweeper is needed at all depends on whether the chosen CRM can derive "last event, then silence"; that call belongs with the CRM decision. |
 
 ## What is verified, and how
 
