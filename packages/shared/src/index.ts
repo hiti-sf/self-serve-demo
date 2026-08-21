@@ -1,4 +1,5 @@
 export * from './schema-version.js';
+export * from './script-guard.js';
 export * from './manifest.js';
 export * from './events.js';
 export * from './lead.js';

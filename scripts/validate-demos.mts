@@ -14,8 +14,13 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { JSDOM } from 'jsdom';
-import { resolveSelector, safeParseManifest, scanText, type Manifest } from '../packages/shared/src/index.js';
-import { assertScriptFree } from '../capture-extension/src/lib/sanitise.js';
+import {
+  assertScriptFree,
+  resolveSelector,
+  safeParseManifest,
+  scanText,
+  type Manifest,
+} from '../packages/shared/src/index.js';
 import { findExternalUrlsInHtml } from '../capture-extension/src/lib/urls.js';
 
 const repoRoot = resolve(import.meta.dirname, '..');

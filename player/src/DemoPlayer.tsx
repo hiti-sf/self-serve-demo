@@ -246,6 +246,9 @@ export function DemoPlayer({
         ) : (
           <>
             <SnapshotFrame
+              // A fresh iframe per step: without it, contentDocument can briefly still be
+              // the previous step's document and hotspots would resolve against it.
+              key={step.stepId}
               html={snapshot.status === 'ready' ? snapshot.html : null}
               fallbackImageUrl={resolve(step.fallbackImage)}
               fit={fit}

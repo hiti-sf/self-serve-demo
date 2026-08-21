@@ -1,4 +1,8 @@
-import type { CaptureWarning } from '@demo-platform/shared';
+import {
+  assertScriptFree,
+  isEventHandlerAttribute,
+  type CaptureWarning,
+} from '@demo-platform/shared';
 
 /**
  * Script removal (SPEC §5, §11).
@@ -7,62 +11,6 @@ import type { CaptureWarning } from '@demo-platform/shared';
  * offline rendering deterministic — the player additionally sandboxes them, but this
  * layer must stand on its own.
  */
-
-const EVENT_HANDLER_SHAPED = /^on[a-z]+$/i;
-
-/**
- * Baseline set of inline event-handler attribute names, used when no DOM is available
- * to introspect. "on"-prefixed does not imply handler — `once` is a legitimate
- * attribute name — so matching is by name, not by prefix.
- */
-const BASELINE_EVENT_HANDLERS = [
-  'onabort','onanimationend','onanimationiteration','onanimationstart','onauxclick','onbeforeinput',
-  'onbeforetoggle','onbeforeunload','onblur','oncancel','oncanplay','oncanplaythrough','onchange',
-  'onclick','onclose','oncontextlost','oncontextmenu','oncontextrestored','oncopy','oncuechange',
-  'oncut','ondblclick','ondrag','ondragend','ondragenter','ondragleave','ondragover','ondragstart',
-  'ondrop','ondurationchange','onemptied','onended','onerror','onfocus','onfocusin','onfocusout',
-  'onformdata','ongotpointercapture','oninput','oninvalid','onkeydown','onkeypress','onkeyup',
-  'onload','onloadeddata','onloadedmetadata','onloadstart','onlostpointercapture','onmousedown',
-  'onmouseenter','onmouseleave','onmousemove','onmouseout','onmouseover','onmouseup','onmousewheel',
-  'onpaste','onpause','onplay','onplaying','onpointercancel','onpointerdown','onpointerenter',
-  'onpointerleave','onpointermove','onpointerout','onpointerover','onpointerup','onprogress',
-  'onratechange','onreset','onresize','onscroll','onscrollend','onsecuritypolicyviolation','onseeked',
-  'onseeking','onselect','onselectionchange','onselectstart','onslotchange','onstalled','onsubmit',
-  'onsuspend','ontimeupdate','ontoggle','ontouchcancel','ontouchend','ontouchmove','ontouchstart',
-  'ontransitioncancel','ontransitionend','ontransitionrun','ontransitionstart','onunload',
-  'onvolumechange','onwaiting','onwebkitanimationend','onwebkitanimationiteration',
-  'onwebkitanimationstart','onwebkittransitionend','onwheel',
-];
-
-let eventHandlerNames: Set<string> | null = null;
-
-/**
- * Prefer the real handler list from the running engine (so a new event type is covered
- * without a code change), falling back to the baseline in a DOM-less context.
- */
-export function getEventHandlerNames(): ReadonlySet<string> {
-  if (eventHandlerNames) return eventHandlerNames;
-  const names = new Set(BASELINE_EVENT_HANDLERS);
-  const proto = (globalThis as { HTMLElement?: { prototype?: object } }).HTMLElement?.prototype;
-  if (proto) {
-    for (const key of Object.getOwnPropertyNames(proto)) {
-      if (EVENT_HANDLER_SHAPED.test(key)) names.add(key.toLowerCase());
-    }
-  }
-  eventHandlerNames = names;
-  return names;
-}
-
-/**
- * True when `name` is an inline event handler on this element. Uses the element's own
- * property surface when available: `'onclick' in el` is true, `'once' in el` is not.
- */
-export function isEventHandlerAttribute(name: string, element?: Element): boolean {
-  const lower = name.toLowerCase();
-  if (!EVENT_HANDLER_SHAPED.test(lower)) return false;
-  if (element && lower in element) return true;
-  return getEventHandlerNames().has(lower);
-}
 
 /** Attributes that can carry an executable URL. */
 const URL_ATTRIBUTES = ['href', 'src', 'action', 'formaction', 'xlink:href', 'data', 'poster'];
@@ -169,21 +117,8 @@ function sanitiseRoot(root: Document | DocumentFragment | Element, stats: Saniti
   }
 }
 
-/** Assertion used by tests and by the capture pipeline before a snapshot is written. */
-export function assertScriptFree(html: string): void {
-  const offenders: string[] = [];
-  if (/<script[\s>]/i.test(html)) offenders.push('<script> element');
-  // Matched against real handler names so attributes like `once=` are not flagged.
-  const handlerRe = /<[a-z][^>]*?\s(on[a-z]+)\s*=/gi;
-  let handlerMatch: RegExpExecArray | null;
-  while ((handlerMatch = handlerRe.exec(html)) !== null) {
-    if (handlerMatch[1] && getEventHandlerNames().has(handlerMatch[1].toLowerCase())) {
-      offenders.push(`inline event handler attribute (${handlerMatch[1]})`);
-      break;
-    }
-  }
-  if (/(?:href|src|action)\s*=\s*["']?\s*javascript:/i.test(html)) offenders.push('javascript: URL');
-  if (offenders.length > 0) {
-    throw new Error(`Snapshot is not script-free: found ${offenders.join(', ')}`);
-  }
-}
+/**
+ * Re-exported so the capture pipeline reads as one unit; the definition lives in
+ * packages/shared because the editor and the demo validator enforce the same rule.
+ */
+export { assertScriptFree };
