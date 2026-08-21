@@ -1,7 +1,7 @@
 import { BatchingCrmAdapter } from './batching.js';
 import { ConsoleCrmAdapter } from './console.js';
 import { WebhookCrmAdapter } from './webhook.js';
-import type { CrmAdapter } from './types.js';
+import type { CrmAdapter, DemoEvent } from './types.js';
 
 /**
  * Build the adapter from the environment. Server-side only.
@@ -26,7 +26,7 @@ export interface CrmEnv {
 
 export function createCrmAdapter(
   env: CrmEnv = process.env as CrmEnv,
-  { onError }: { onError?: (error: unknown, dropped: unknown[]) => void } = {},
+  { onError }: { onError?: (error: unknown, dropped: DemoEvent[]) => void } = {},
 ): CrmAdapter {
   const kind = (env.CRM_ADAPTER ?? 'console').toLowerCase();
 
@@ -55,6 +55,6 @@ export function createCrmAdapter(
   return new BatchingCrmAdapter(base, {
     batchSize: env.CRM_BATCH_SIZE ? Number(env.CRM_BATCH_SIZE) : undefined,
     flushIntervalMs: env.CRM_FLUSH_INTERVAL_MS ? Number(env.CRM_FLUSH_INTERVAL_MS) : undefined,
-    onError: onError as ((error: unknown, dropped: never[]) => void) | undefined,
+    onError,
   });
 }

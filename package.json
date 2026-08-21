@@ -29,7 +29,8 @@
     "ci": "pnpm typecheck && pnpm test && pnpm validate:demos && pnpm lint:no-secrets",
     "smoke:player": "pnpm build:player && node scripts/smoke-player.mjs",
     "serve:web": "SERVE_DIST=1 tsx builds/web/server/dev-server.mts",
-    "smoke:web": "node builds/web/scripts/build-web.mjs && tsx scripts/smoke-web.mts"
+    "smoke:web": "node builds/web/scripts/build-web.mjs && tsx scripts/smoke-web.mts",
+    "smoke:kiosk": "node builds/kiosk/scripts/build-kiosk.mjs --all && tsx scripts/smoke-kiosk.mts"
   },
   "devDependencies": {
     "@types/node": "22.20.1",

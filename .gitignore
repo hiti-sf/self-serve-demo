@@ -11,3 +11,4 @@ coverage/
 capture-extension/dist/
 builds/kiosk/launcher/bin/
 .smoke/
+builds/kiosk/dist-kiosk/

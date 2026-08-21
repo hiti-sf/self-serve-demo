@@ -1,0 +1,33 @@
+{
+  "comment": "Hosts allowed to appear as bare strings inside a kiosk bundle. Every entry needs a reason, and none of them may sit in a loadable position (src, href on <link>, CSS url(), fetch, import). The lint fails on anything not listed. See builds/kiosk/scripts/lint-external-urls.mjs.",
+  "hosts": [
+    {
+      "host": "www.w3.org",
+      "reason": "XML/SVG namespace identifiers. Never fetched — namespaces are compared as strings."
+    },
+    {
+      "host": "react.dev",
+      "reason": "React embeds documentation links in its error messages. Only ever printed to the console."
+    },
+    {
+      "host": "reactjs.org",
+      "reason": "Older React error-message links, same as above."
+    },
+    {
+      "host": "json-schema.org",
+      "reason": "JSON Schema $schema identifiers emitted by zod. Compared as strings, never dereferenced."
+    },
+    {
+      "host": "pivotpath.example",
+      "reason": "End-screen CTA targets in the demo manifests. Opened in the visitor's browser when they click; never fetched by the bundle."
+    },
+    {
+      "host": "inlumin.demo.internal",
+      "reason": "Capture provenance recorded in snapshot data-demo-source-url attributes. Not a loadable attribute."
+    },
+    {
+      "host": "app.example",
+      "reason": "Original hrefs preserved as data-demo-original-href when the capture parked anchor targets."
+    }
+  ]
+}
