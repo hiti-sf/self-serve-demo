@@ -1,0 +1,38 @@
+{
+  "name": "demo-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive product demo platform for Pivot Path SaaS products. One engine, many manifests.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "dev:player": "pnpm --filter @demo-platform/player dev",
+    "dev:editor": "pnpm --filter @demo-platform/editor dev",
+    "dev:editor:server": "node editor/server/publish-server.mjs",
+    "dev:web": "node builds/web/server/dev-server.mjs",
+    "build": "pnpm -r --filter=!@demo-platform/kiosk build",
+    "build:shared": "pnpm --filter @demo-platform/shared build",
+    "build:player": "pnpm --filter @demo-platform/player build",
+    "build:editor": "pnpm --filter @demo-platform/editor build",
+    "build:extension": "pnpm --filter @demo-platform/capture-extension build",
+    "build:web": "node builds/web/scripts/build-web.mjs",
+    "build:kiosk": "node builds/kiosk/scripts/build-kiosk.mjs",
+    "lint:no-external-urls": "node builds/kiosk/scripts/lint-external-urls.mjs",
+    "lint:no-secrets": "node scripts/lint-no-secrets.mjs",
+    "validate:demos": "node scripts/validate-demos.mjs",
+    "render:fallbacks": "node scripts/render-fallbacks.mjs",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ci": "pnpm typecheck && pnpm test && pnpm validate:demos && pnpm lint:no-secrets"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7",
+    "jsdom": "30.0.1",
+    "zod": "4.4.3"
+  }
+}

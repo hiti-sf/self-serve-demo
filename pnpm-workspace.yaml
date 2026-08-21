@@ -1,0 +1,7 @@
+packages:
+  - 'packages/*'
+  - 'adapters/*'
+  - 'builds/*'
+  - 'capture-extension'
+  - 'player'
+  - 'editor'

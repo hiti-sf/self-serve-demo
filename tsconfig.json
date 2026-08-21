@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./adapters/crm" },
+    { "path": "./player" },
+    { "path": "./editor" },
+    { "path": "./capture-extension" }
+  ]
+}
