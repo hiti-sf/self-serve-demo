@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo capture worker</title>
+  </head>
+  <body>
+    <!--
+      Offscreen document. Two capabilities the service worker lacks:
+        1. a DOM to rebuild the captured tree into (inside a sandboxed iframe)
+        2. OffscreenCanvas for stitching and cropping screenshots
+    -->
+    <div id="rebuild-root"></div>
+    <script type="module" src="convert.js"></script>
+  </body>
+</html>

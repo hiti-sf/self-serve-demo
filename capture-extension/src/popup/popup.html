@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Capture step</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Capture step</h1>
+      <p class="sub">Snapshots are static, script-free and offline-safe by construction.</p>
+    </header>
+
+    <button id="capture" class="primary" type="button">Capture this screen</button>
+    <p id="status" class="status" role="status"></p>
+
+    <section id="summary" hidden>
+      <img id="preview" alt="Full-page fallback preview" />
+      <dl id="stats"></dl>
+
+      <details id="warnings-block">
+        <summary>Capture notes (<span id="warning-count">0</span>)</summary>
+        <ul id="warnings"></ul>
+      </details>
+
+      <section id="pii-block" hidden>
+        <h2>Possible personal data</h2>
+        <p class="sub">
+          Demo data must be synthetic. Tick anything that should be replaced with
+          <code>[redacted]</code> before this capture is saved.
+        </p>
+        <ul id="pii"></ul>
+        <label class="row">
+          <input type="checkbox" id="pii-all" checked />
+          <span>Select all</span>
+        </label>
+      </section>
+
+      <label class="field">
+        <span>Folder name</span>
+        <input type="text" id="folder" placeholder="flow-01-requisition" />
+      </label>
+
+      <button id="save" class="primary" type="button">Save capture trio</button>
+      <p class="sub">
+        Writes <code>snapshot.html</code>, <code>fallback.png</code> and
+        <code>capture-meta.json</code> to your downloads folder. Import that folder in the editor.
+      </p>
+    </section>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
