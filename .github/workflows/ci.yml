@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+env:
+  # The acceptance gates drive a real browser; the runner image ships Chromium.
+  CHROMIUM_PATH: /usr/bin/chromium-browser
+
+jobs:
+  # Fast gate: everything that does not need a browser.
+  checks:
+    name: Typecheck, tests, demo validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck every package
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Demos are content authored by non-engineers, so the guarantees are checked
+      # mechanically: schema validity, files present, snapshots script-free with no
+      # external URLs, no PII in snapshot text, and every hotspot selector resolving.
+      - name: Validate demo content
+        run: pnpm validate:demos
+
+      # §11: no credential may be committed, and none may reach a client bundle.
+      - name: Credential check
+        run: pnpm lint:no-secrets
+
+  build:
+    name: Build every target
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The kiosk launcher is a static Go binary so a booth laptop needs nothing
+      # installed. No modules to cache — it uses only the standard library.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Player, editor, web target and capture extension
+        run: pnpm build
+
+      # This step is the offline guarantee (§8.2), not a style preference: the build
+      # fails if any external URL survives into the bundle.
+      - name: Kiosk bundle
+        run: pnpm build:kiosk --all --all-platforms
+
+      - name: Credential check on the built bundles
+        run: pnpm lint:no-secrets
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiosk-bundle
+          path: builds/kiosk/dist-kiosk
+          retention-days: 14
+
+  # Browser-driven acceptance gates (§12).
+  acceptance:
+    name: Acceptance (${{ matrix.gate }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [player, web, kiosk, editor]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-go@v5
+        if: matrix.gate == 'kiosk'
+        with:
+          go-version: '1.22'
+          cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser || sudo snap install chromium
+          echo "CHROMIUM_PATH=$(command -v chromium-browser || command -v chromium)" >> "$GITHUB_ENV"
+
+      # M2: snapshots render sandboxed, hotspots anchor by selector and survive a
+      # resize, keyboard nav and chapters work, a broken snapshot falls back to its image.
+      - name: M2 — player
+        if: matrix.gate == 'player'
+        run: |
+          pnpm build:player
+          for demo in demos/inlumin/*/; do node scripts/smoke-player.mjs "$demo"; done
+
+      # M4: the gate creates a lead, the demo unlocks, the event stream lands with the
+      # leadId, and abandonment is derivable.
+      - name: M4 — gated web target
+        if: matrix.gate == 'web'
+        run: pnpm smoke:web
+
+      # M5: the bundle runs from a copied folder with DNS dead, events queue locally and
+      # sync once an endpoint is reachable.
+      - name: M5 — kiosk bundle
+        if: matrix.gate == 'kiosk'
+        run: pnpm smoke:kiosk
+
+      # M3: a full 8+ step flow authored through the UI and published, no JSON by hand.
+      - name: M3 — editor
+        if: matrix.gate == 'editor'
+        run: pnpm smoke:editor
+
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.gate == 'player'
+        with:
+          name: player-screenshots
+          path: .smoke
+          retention-days: 7
+          if-no-files-found: ignore

@@ -17,7 +17,8 @@ import { createStaticServer, listen } from './static-server.mjs';
 import { launchBrowser } from './cdp.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..');
-const demoDirArg = process.argv[2] ?? 'demos/inlumin/flow-01-requisition-to-po';
+// Tolerate a trailing slash so `for d in demos/*/; do …` works as written.
+const demoDirArg = (process.argv[2] ?? 'demos/inlumin/flow-01-requisition-to-po').replace(/\/+$/, '');
 const shotsDir = join(repoRoot, '.smoke');
 
 const checks = [];
