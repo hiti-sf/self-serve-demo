@@ -48,6 +48,43 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  adapters/crm:
+    dependencies:
+      '@demo-platform/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+
+  builds/web:
+    dependencies:
+      '@demo-platform/crm-adapter':
+        specifier: workspace:*
+        version: link:../../adapters/crm
+      '@demo-platform/player':
+        specifier: workspace:*
+        version: link:../../player
+      '@demo-platform/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      react:
+        specifier: 19.0.8
+        version: 19.0.8
+      react-dom:
+        specifier: 19.0.8
+        version: 19.0.8(react@19.0.8)
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 19.2.4
+        version: 19.2.4(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: 5.2.0
+        version: 5.2.0(vite@7.3.6(@types/node@22.20.1)(tsx@4.23.12))
+      vite:
+        specifier: 7.3.6
+        version: 7.3.6(@types/node@22.20.1)(tsx@4.23.12)
+
   capture-extension:
     dependencies:
       '@demo-platform/shared':

@@ -11,7 +11,7 @@
     "dev:player": "pnpm --filter @demo-platform/player dev",
     "dev:editor": "pnpm --filter @demo-platform/editor dev",
     "dev:editor:server": "node editor/server/publish-server.mjs",
-    "dev:web": "node builds/web/server/dev-server.mjs",
+    "dev:web": "tsx builds/web/server/dev-server.mts",
     "build": "pnpm -r --filter=!@demo-platform/kiosk build",
     "build:shared": "pnpm --filter @demo-platform/shared build",
     "build:player": "pnpm --filter @demo-platform/player build",
@@ -27,7 +27,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "ci": "pnpm typecheck && pnpm test && pnpm validate:demos && pnpm lint:no-secrets",
-    "smoke:player": "pnpm build:player && node scripts/smoke-player.mjs"
+    "smoke:player": "pnpm build:player && node scripts/smoke-player.mjs",
+    "serve:web": "SERVE_DIST=1 tsx builds/web/server/dev-server.mts",
+    "smoke:web": "node builds/web/scripts/build-web.mjs && tsx scripts/smoke-web.mts"
   },
   "devDependencies": {
     "@types/node": "22.20.1",
