@@ -129,6 +129,26 @@ jobs:
           echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
           "$BROWSER" --version
 
+      # …except for the capture gate, which has to load an unpacked extension. Branded
+      # Chrome dropped support for --load-extension and the feature flag that used to
+      # re-enable it, so the tab lands on an error page and nothing installs. Chromium
+      # never carried that restriction.
+      - name: Install Chromium (capture gate only)
+        if: matrix.gate == 'capture'
+        run: |
+          INSTALL_DIR="$RUNNER_TEMP/chromium"
+          npx --yes @puppeteer/browsers install chromium@latest --path "$INSTALL_DIR"
+          # Resolve from the filesystem rather than by parsing stdout: the install layout
+          # is stable, the log format is not.
+          BROWSER="$(find "$INSTALL_DIR" -type f -name chrome -perm -u+x | head -1)"
+          if [ -z "$BROWSER" ]; then
+            echo "No Chromium binary under $INSTALL_DIR after install:" >&2
+            find "$INSTALL_DIR" -maxdepth 4 >&2
+            exit 1
+          fi
+          echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
       # M1: a real capture through all four extension contexts against a fixture that
       # carries every hard case §5 names, then the snapshot rendered with DNS dead.
       - name: M1 — capture extension

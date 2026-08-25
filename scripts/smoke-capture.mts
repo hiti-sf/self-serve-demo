@@ -291,13 +291,47 @@ try {
   const popup = await attach(popupTarget);
   await popup.send('Runtime.enable');
 
-  const identity = await popup.evaluate<{ id: string; version: number; permissions: string[] }>(
-    `(() => ({ id: chrome.runtime.id, version: chrome.runtime.getManifest().manifest_version,
-               permissions: chrome.runtime.getManifest().permissions }))()`,
+  // A tab can sit at a chrome-extension:// URL and still be an error page: if the browser
+  // declined to install the unpacked extension, nothing is served there and `chrome.runtime`
+  // is absent. Ask the page what it is, rather than assuming the URL means it loaded.
+  const identity = await popup.evaluate<{
+    installed: boolean;
+    id?: string;
+    version?: number;
+    permissions?: string[];
+    title: string;
+    text: string;
+  }>(`(() => {
+    const runtime = typeof chrome !== 'undefined' && chrome.runtime;
+    if (!runtime || !runtime.id) {
+      return { installed: false, title: document.title, text: (document.body?.innerText ?? '').slice(0, 200) };
+    }
+    const manifest = chrome.runtime.getManifest();
+    return {
+      installed: true,
+      id: chrome.runtime.id,
+      version: manifest.manifest_version,
+      permissions: manifest.permissions,
+      title: document.title,
+      text: '',
+    };
+  })()`);
+
+  check(
+    'the browser installed the unpacked extension',
+    identity.installed,
+    identity.installed
+      ? ''
+      : `the popup URL resolves to nothing — this browser is refusing --load-extension. ` +
+        `page said ${JSON.stringify(identity.title)} / ${JSON.stringify(identity.text)}. ` +
+        `Use Chrome for Testing or Chromium; branded Chrome removed support for the switch.`,
   );
-  const extensionId = identity.id;
-  check('it is the MV3 extension we just built', identity.version === 3 && identity.permissions.includes('offscreen'),
-    JSON.stringify(identity));
+  if (!identity.installed) throw new Error('the browser refused to load the unpacked extension');
+
+  const extensionId = identity.id!;
+  check('it is the MV3 extension we just built',
+    identity.version === 3 && (identity.permissions ?? []).includes('offscreen'),
+    JSON.stringify({ version: identity.version, permissions: identity.permissions }));
   // If this ever drifts, the popup URL built above is addressing a dead extension and the
   // failure would read as "the extension did not load" rather than "the id was wrong".
   check('the extension id is derivable from its path', extensionId === expectedId, `${extensionId} vs ${expectedId}`);
