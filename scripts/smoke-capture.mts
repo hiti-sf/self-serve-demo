@@ -24,6 +24,7 @@ import { createReadStream } from 'node:fs';
 import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { findChromium } from './cdp.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..');
@@ -142,6 +143,9 @@ const chrome: ChildProcess = spawn(
   [
     '--headless=new',
     '--no-sandbox',
+    // Branded Chrome (the GitHub runner's browser) refuses --load-extension unless this
+    // is off; Chromium builds, which is what this runs against locally, never had it.
+    '--disable-features=DisableLoadExtensionCommandLineSwitch',
     // Software GL, so the WebGL path is genuinely exercised rather than skipped.
     '--enable-unsafe-swiftshader',
     '--use-gl=angle',
@@ -172,6 +176,24 @@ interface Target {
 async function targets(): Promise<Target[]> {
   const response = await fetch(`http://127.0.0.1:${port}/json/list`);
   return (await response.json()) as Target[];
+}
+
+/**
+ * Chrome derives an unpacked extension's id from its absolute path: the first 16 bytes of
+ * the SHA-256, with each hex digit mapped into a–p. Knowing it up front means the harness
+ * can reach an extension page without needing the extension to already be awake.
+ */
+function unpackedExtensionId(dir: string): string {
+  const digest = createHash('sha256').update(dir, 'utf8').digest('hex').slice(0, 32);
+  return [...digest].map((d) => String.fromCharCode(0x61 + Number.parseInt(d, 16))).join('');
+}
+
+/** Open a tab through the DevTools endpoint, which needs no page and no extension. */
+async function openTab(url: string): Promise<void> {
+  const endpoint = `http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`;
+  const response = await fetch(endpoint, { method: 'PUT' });
+  // Chrome required GET here until 111 and rejects it since; try the other verb once.
+  if (!response.ok) await fetch(endpoint).catch(() => undefined);
 }
 
 /** A minimal CDP session against one target. */
@@ -231,10 +253,10 @@ async function attach(target: Target) {
 let failures = 0;
 
 try {
-  // Wait for the extension's service worker and the fixture page.
+  // Wait for the fixture page, then for the extension.
   let serviceWorker: Target | undefined;
   let pageTarget: Target | undefined;
-  for (let attempt = 0; attempt < 80 && !(serviceWorker && pageTarget); attempt += 1) {
+  for (let attempt = 0; attempt < 60 && !(serviceWorker && pageTarget); attempt += 1) {
     await delay(250);
     try {
       const list = await targets();
@@ -245,11 +267,35 @@ try {
     }
   }
 
-  check('the built extension loads as an MV3 extension', Boolean(serviceWorker), chromeLog.slice(-300));
+  // An MV3 service worker is lazy: with no event to handle it may not be running, and a
+  // worker that is not running has no debugger target at all. Opening any extension page
+  // starts it. The id is derivable, so this needs nothing from the extension itself.
+  const expectedId = unpackedExtensionId(testExtensionDir);
+  if (!serviceWorker) {
+    await openTab(`chrome-extension://${expectedId}/popup/popup.html`);
+    for (let attempt = 0; attempt < 40 && !serviceWorker; attempt += 1) {
+      await delay(250);
+      serviceWorker = (await targets()).find(
+        (t) => t.type === 'service_worker' && t.url.includes('service-worker'),
+      );
+    }
+  }
+
+  check(
+    'the built extension loads as an MV3 extension',
+    Boolean(serviceWorker),
+    `expected ${expectedId}; targets: ${(await targets().catch(() => []))
+      .map((t) => `${t.type} ${t.url}`)
+      .join(' | ')
+      .slice(0, 400)} · chrome: ${chromeLog.slice(-300)}`,
+  );
   check('the fixture page is open', Boolean(pageTarget));
   if (!serviceWorker || !pageTarget) throw new Error('extension or page never appeared');
 
   const extensionId = new URL(serviceWorker.url).host;
+  // If this ever drifts, the lazy-worker wake path above is opening a dead URL and the
+  // failure would look like "the extension did not load" rather than "the id was wrong".
+  check('the extension id is derivable from its path', extensionId === expectedId, `${extensionId} vs ${expectedId}`);
   console.log(`  extension id ${extensionId}\n`);
 
   const page = await attach(pageTarget);
@@ -304,10 +350,8 @@ try {
   // The service worker's own listener does not receive its own sendMessage, and an
   // extension page is not injectable (`<all_urls>` does not cover chrome-extension://),
   // so the capture is driven from the popup page itself — exactly the real path.
-  await worker.evaluate(
-    `chrome.tabs.create({ url: chrome.runtime.getURL('popup/popup.html'), active: false }).then(() => true)`,
-  );
-  let popupTarget: Target | undefined;
+  let popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
+  if (!popupTarget) await openTab(`chrome-extension://${extensionId}/popup/popup.html`);
   for (let attempt = 0; attempt < 40 && !popupTarget; attempt += 1) {
     await delay(250);
     popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
@@ -317,9 +361,14 @@ try {
   const popup = await attach(popupTarget);
   await popup.send('Runtime.enable');
 
+  // The popup opened in the foreground, and `captureVisibleTab` needs the page it is
+  // capturing to be the visible one. Put the fixture back in front.
+  await worker.evaluate(`chrome.tabs.update(${tabId}, { active: true }).then(() => true)`);
+
   console.log('\n  running a capture through the full pipeline…\n');
   const started = Date.now();
 
+  // A hang here is a result, not a crash: report it as the failed check it is.
   const captured = await popup.evaluate<{
     ok: boolean;
     error?: string;
@@ -340,7 +389,7 @@ try {
     } catch (error) {
       return { ok: false, error: String((error && error.stack) || error) };
     }
-  })()`);
+  })()`).catch((error: Error) => ({ ok: false as const, error: error.message }));
 
   const elapsed = Date.now() - started;
   check('the capture completed', captured?.ok === true, captured?.error ?? JSON.stringify(captured)?.slice(0, 300));
@@ -435,9 +484,7 @@ try {
     // shipped with — a shadow root that serialises but never rehydrates, and a poster
     // image sized to the file rather than to the video it replaced — stay caught.
     await writeFile(join(appDir, 'snapshot.html'), html, 'utf8');
-    await worker.evaluate(
-      `chrome.tabs.create({ url: ${JSON.stringify(`http://127.0.0.1:${appPort}/snapshot.html`)}, active: false }).then(() => true)`,
-    );
+    await openTab(`http://127.0.0.1:${appPort}/snapshot.html`);
     let snapshotTarget: Target | undefined;
     for (let attempt = 0; attempt < 40 && !snapshotTarget; attempt += 1) {
       await delay(250);
