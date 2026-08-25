@@ -256,26 +256,23 @@ try {
   // The extension's id is derivable from its path, so the harness can address it before
   // it has done anything observable.
   const expectedId = unpackedExtensionId(testExtensionDir);
-  const isOurWorker = (t: Target) =>
-    t.type === 'service_worker' && t.url.startsWith(`chrome-extension://${expectedId}/`);
 
-  let serviceWorker: Target | undefined;
   let pageTarget: Target | undefined;
-  for (let attempt = 0; attempt < 40 && !(serviceWorker && pageTarget); attempt += 1) {
+  for (let attempt = 0; attempt < 40 && !pageTarget; attempt += 1) {
     await delay(250);
     try {
-      const list = await targets();
-      serviceWorker = list.find(isOurWorker);
-      pageTarget = list.find((t) => t.type === 'page' && t.url.startsWith(appUrl));
+      pageTarget = (await targets()).find((t) => t.type === 'page' && t.url.startsWith(appUrl));
     } catch {
       /* not up yet */
     }
   }
+  check('the fixture page is open', Boolean(pageTarget));
 
-  // An MV3 service worker is lazy, and one that is not running has no debugger target at
-  // all — which is what the runner sees, while a development machine usually catches the
-  // worker still alive from install. Merely *opening* an extension page does not start it;
-  // delivering it a message does. So open the popup and have it say hello.
+  // Everything is driven from the popup, which is where the product drives it from too.
+  // Attaching to the service worker instead would be a harness-only path, and not a
+  // portable one: Chrome does not list extension service workers as debugger targets in
+  // every version, and an MV3 worker that is idle has no target at all. The popup has the
+  // same chrome.* surface, and a successful capture proves the worker ran regardless.
   let popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
   if (!popupTarget) {
     await openTab(`chrome-extension://${expectedId}/popup/popup.html`);
@@ -284,38 +281,25 @@ try {
       popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
     }
   }
-  check('the popup page is running', Boolean(popupTarget));
-  if (!popupTarget) throw new Error('the popup never opened');
+  check('the extension loads and its popup runs', Boolean(popupTarget),
+    `expected ${expectedId}; targets: ${(await targets().catch(() => []))
+      .map((t) => `${t.type} ${t.url}`)
+      .join(' | ')
+      .slice(0, 400)} · chrome: ${chromeLog.slice(-300)}`);
+  if (!popupTarget || !pageTarget) throw new Error('extension or page never appeared');
 
   const popup = await attach(popupTarget);
   await popup.send('Runtime.enable');
 
-  if (!serviceWorker) {
-    // The worker has no handler for this, so it replies with an error — which is fine.
-    // Starting it is the point; the reply is not.
-    await popup
-      .evaluate(`chrome.runtime.sendMessage({ type: 'harness/wake' }).then(() => true, () => true)`)
-      .catch(() => undefined);
-    for (let attempt = 0; attempt < 40 && !serviceWorker; attempt += 1) {
-      await delay(250);
-      serviceWorker = (await targets()).find(isOurWorker);
-    }
-  }
-
-  check(
-    'the built extension loads as an MV3 extension',
-    Boolean(serviceWorker),
-    `expected ${expectedId}; targets: ${(await targets().catch(() => []))
-      .map((t) => `${t.type} ${t.url}`)
-      .join(' | ')
-      .slice(0, 400)} · chrome: ${chromeLog.slice(-300)}`,
+  const identity = await popup.evaluate<{ id: string; version: number; permissions: string[] }>(
+    `(() => ({ id: chrome.runtime.id, version: chrome.runtime.getManifest().manifest_version,
+               permissions: chrome.runtime.getManifest().permissions }))()`,
   );
-  check('the fixture page is open', Boolean(pageTarget));
-  if (!serviceWorker || !pageTarget) throw new Error('extension or page never appeared');
-
-  const extensionId = new URL(serviceWorker.url).host;
-  // If this ever drifts, the wake path above is addressing a dead URL and the failure
-  // would read as "the extension did not load" rather than "the id was wrong".
+  const extensionId = identity.id;
+  check('it is the MV3 extension we just built', identity.version === 3 && identity.permissions.includes('offscreen'),
+    JSON.stringify(identity));
+  // If this ever drifts, the popup URL built above is addressing a dead extension and the
+  // failure would read as "the extension did not load" rather than "the id was wrong".
   check('the extension id is derivable from its path', extensionId === expectedId, `${extensionId} vs ${expectedId}`);
   console.log(`  extension id ${extensionId}\n`);
 
@@ -358,23 +342,16 @@ try {
   // Drive the extension exactly as the popup does: send `capture/start` to the service
   // worker with the target tab. The whole pipeline runs — pre-pass, rrweb traversal,
   // offscreen rebuild, sanitise, embed, screenshot crops, CSP, serialise, PII scan.
-  const worker = await attach(serviceWorker);
-  await worker.send('Runtime.enable');
-
-  const tabId = await worker.evaluate<number>(`(async () => {
+  const tabId = await popup.evaluate<number>(`(async () => {
     const tabs = await chrome.tabs.query({ url: ${JSON.stringify(`${appUrl}*`)} });
     return tabs.length ? tabs[0].id : -1;
   })()`);
-  check('the worker can see the fixture tab', typeof tabId === 'number' && tabId >= 0, String(tabId));
+  check('the extension can see the fixture tab', typeof tabId === 'number' && tabId >= 0, String(tabId));
 
 
-  // The capture is driven from the popup page attached above — the service worker does
-  // not receive its own sendMessage, and an extension page is not injectable
-  // (`<all_urls>` does not cover chrome-extension://). This is the real path anyway.
-  //
   // The popup opened in the foreground, and `captureVisibleTab` needs the page it is
   // capturing to be the visible one. Put the fixture back in front.
-  await worker.evaluate(`chrome.tabs.update(${tabId}, { active: true }).then(() => true)`);
+  await popup.evaluate(`chrome.tabs.update(${tabId}, { active: true }).then(() => true)`);
 
   console.log('\n  running a capture through the full pipeline…\n');
   const started = Date.now();
@@ -539,7 +516,6 @@ try {
     }
   }
 
-  worker.close();
   page.close();
   failures = checks.filter((entry) => !entry.ok).length;
 } finally {
