@@ -1,9 +1,17 @@
 name: CI
 
 on:
+  # Branch pushes are covered by the pull_request event; running both doubles every
+  # job on an open PR. `push` is kept for the default branch, which has no PR.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
+
+# A new push supersedes the run in flight: the acceptance gates take minutes, and
+# nobody needs the result for a commit that is already stale.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Fast gate: everything that does not need a browser.
