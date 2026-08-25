@@ -253,31 +253,52 @@ async function attach(target: Target) {
 let failures = 0;
 
 try {
-  // Wait for the fixture page, then for the extension.
+  // The extension's id is derivable from its path, so the harness can address it before
+  // it has done anything observable.
+  const expectedId = unpackedExtensionId(testExtensionDir);
+  const isOurWorker = (t: Target) =>
+    t.type === 'service_worker' && t.url.startsWith(`chrome-extension://${expectedId}/`);
+
   let serviceWorker: Target | undefined;
   let pageTarget: Target | undefined;
-  for (let attempt = 0; attempt < 60 && !(serviceWorker && pageTarget); attempt += 1) {
+  for (let attempt = 0; attempt < 40 && !(serviceWorker && pageTarget); attempt += 1) {
     await delay(250);
     try {
       const list = await targets();
-      serviceWorker = list.find((t) => t.type === 'service_worker' && t.url.includes('service-worker'));
+      serviceWorker = list.find(isOurWorker);
       pageTarget = list.find((t) => t.type === 'page' && t.url.startsWith(appUrl));
     } catch {
       /* not up yet */
     }
   }
 
-  // An MV3 service worker is lazy: with no event to handle it may not be running, and a
-  // worker that is not running has no debugger target at all. Opening any extension page
-  // starts it. The id is derivable, so this needs nothing from the extension itself.
-  const expectedId = unpackedExtensionId(testExtensionDir);
-  if (!serviceWorker) {
+  // An MV3 service worker is lazy, and one that is not running has no debugger target at
+  // all — which is what the runner sees, while a development machine usually catches the
+  // worker still alive from install. Merely *opening* an extension page does not start it;
+  // delivering it a message does. So open the popup and have it say hello.
+  let popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
+  if (!popupTarget) {
     await openTab(`chrome-extension://${expectedId}/popup/popup.html`);
+    for (let attempt = 0; attempt < 40 && !popupTarget; attempt += 1) {
+      await delay(250);
+      popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
+    }
+  }
+  check('the popup page is running', Boolean(popupTarget));
+  if (!popupTarget) throw new Error('the popup never opened');
+
+  const popup = await attach(popupTarget);
+  await popup.send('Runtime.enable');
+
+  if (!serviceWorker) {
+    // The worker has no handler for this, so it replies with an error — which is fine.
+    // Starting it is the point; the reply is not.
+    await popup
+      .evaluate(`chrome.runtime.sendMessage({ type: 'harness/wake' }).then(() => true, () => true)`)
+      .catch(() => undefined);
     for (let attempt = 0; attempt < 40 && !serviceWorker; attempt += 1) {
       await delay(250);
-      serviceWorker = (await targets()).find(
-        (t) => t.type === 'service_worker' && t.url.includes('service-worker'),
-      );
+      serviceWorker = (await targets()).find(isOurWorker);
     }
   }
 
@@ -293,8 +314,8 @@ try {
   if (!serviceWorker || !pageTarget) throw new Error('extension or page never appeared');
 
   const extensionId = new URL(serviceWorker.url).host;
-  // If this ever drifts, the lazy-worker wake path above is opening a dead URL and the
-  // failure would look like "the extension did not load" rather than "the id was wrong".
+  // If this ever drifts, the wake path above is addressing a dead URL and the failure
+  // would read as "the extension did not load" rather than "the id was wrong".
   check('the extension id is derivable from its path', extensionId === expectedId, `${extensionId} vs ${expectedId}`);
   console.log(`  extension id ${extensionId}\n`);
 
@@ -347,20 +368,10 @@ try {
   check('the worker can see the fixture tab', typeof tabId === 'number' && tabId >= 0, String(tabId));
 
 
-  // The service worker's own listener does not receive its own sendMessage, and an
-  // extension page is not injectable (`<all_urls>` does not cover chrome-extension://),
-  // so the capture is driven from the popup page itself — exactly the real path.
-  let popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
-  if (!popupTarget) await openTab(`chrome-extension://${extensionId}/popup/popup.html`);
-  for (let attempt = 0; attempt < 40 && !popupTarget; attempt += 1) {
-    await delay(250);
-    popupTarget = (await targets()).find((t) => t.type === 'page' && t.url.includes('popup/popup.html'));
-  }
-  check('the popup page is running', Boolean(popupTarget));
-  if (!popupTarget) throw new Error('the popup never opened');
-  const popup = await attach(popupTarget);
-  await popup.send('Runtime.enable');
-
+  // The capture is driven from the popup page attached above — the service worker does
+  // not receive its own sendMessage, and an extension page is not injectable
+  // (`<all_urls>` does not cover chrome-extension://). This is the real path anyway.
+  //
   // The popup opened in the foreground, and `captureVisibleTab` needs the page it is
   // capturing to be the visible one. Put the fixture back in front.
   await worker.evaluate(`chrome.tabs.update(${tabId}, { active: true }).then(() => true)`);
