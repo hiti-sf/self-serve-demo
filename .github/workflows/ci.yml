@@ -96,7 +96,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gate: [player, web, kiosk, editor]
+        gate: [capture, player, web, kiosk, editor]
     steps:
       - uses: actions/checkout@v4
 
@@ -129,6 +129,12 @@ jobs:
           echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
           "$BROWSER" --version
 
+      # M1: a real capture through all four extension contexts against a fixture that
+      # carries every hard case §5 names, then the snapshot rendered with DNS dead.
+      - name: M1 — capture extension
+        if: matrix.gate == 'capture'
+        run: pnpm smoke:capture
+
       # M2: snapshots render sandboxed, hotspots anchor by selector and survive a
       # resize, keyboard nav and chapters work, a broken snapshot falls back to its image.
       - name: M2 — player
@@ -154,10 +160,11 @@ jobs:
         if: matrix.gate == 'editor'
         run: pnpm smoke:editor
 
+      # The capture gate's real output is a pair of images a human compares by eye.
       - uses: actions/upload-artifact@v4
-        if: always() && matrix.gate == 'player'
+        if: always() && (matrix.gate == 'player' || matrix.gate == 'capture')
         with:
-          name: player-screenshots
+          name: smoke-artefacts-${{ matrix.gate }}
           path: .smoke
           retention-days: 7
           if-no-files-found: ignore

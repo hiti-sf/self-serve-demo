@@ -9,7 +9,7 @@
  * whole point is producing artefacts with no external references.
  */
 import { build } from 'vite';
-import { cp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -69,6 +69,46 @@ await build({
     watch: watch ? {} : null,
   },
 });
+
+/**
+ * Chrome refuses to inject a script file whose bytes contain a Unicode *noncharacter*
+ * or a lone surrogate — `chrome.scripting.executeScript` fails with the misleading
+ * "It isn't UTF-8 encoded", even though the file decodes cleanly. postcss (a transitive
+ * dependency of rrweb-snapshot) ships a literal U+FFFE in a BOM comparison, which is
+ * enough to make the content script unloadable in every context.
+ *
+ * Escaping those code points to \uXXXX is safe wherever they can legally appear —
+ * string literals, template literals, regex literals — and meaningless in a comment.
+ * Nothing else in the output changes.
+ */
+function escapeUnloadableCodePoints(source) {
+  let escaped = 0;
+  const out = source.replace(/[\uD800-\uDFFF\uFDD0-\uFDEF\uFFFE\uFFFF]/g, (char, index) => {
+    const code = char.codePointAt(0);
+    // A properly paired surrogate is ordinary text and must be left alone.
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = source.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) return char;
+    }
+    if (code >= 0xdc00 && code <= 0xdfff) {
+      const previous = source.charCodeAt(index - 1);
+      if (previous >= 0xd800 && previous <= 0xdbff) return char;
+    }
+    escaped += 1;
+    return `\\u${code.toString(16).toUpperCase().padStart(4, '0')}`;
+  });
+  return { out, escaped };
+}
+
+const emitted = await readdir(outDir, { recursive: true });
+for (const name of emitted) {
+  if (!name.endsWith('.js')) continue;
+  const file = resolve(outDir, name);
+  const { out, escaped } = escapeUnloadableCodePoints(await readFile(file, 'utf8'));
+  if (escaped === 0) continue;
+  await writeFile(file, out, 'utf8');
+  console.log(`  escaped ${escaped} unloadable code point(s) in ${name}`);
+}
 
 // Static assets.
 await mkdir(resolve(outDir, 'popup'), { recursive: true });

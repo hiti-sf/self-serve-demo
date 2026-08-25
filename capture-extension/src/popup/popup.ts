@@ -29,6 +29,27 @@ const folder = el<HTMLInputElement>('folder');
 
 let current: CaptureResult | null = null;
 
+/**
+ * Host access (SPEC §5).
+ *
+ * `activeTab` covers reading the page the author invoked us on, but embedding its
+ * cross-origin fonts, images and stylesheets means fetching from *other* origins in the
+ * service worker, and that needs a real host permission. It is declared optional so
+ * installing the extension does not demand access to every site up front — so it has to
+ * be requested, once, from a user gesture. This click is that gesture.
+ */
+async function ensureHostAccess(): Promise<boolean> {
+  const wanted: chrome.permissions.Permissions = { origins: ['<all_urls>'] };
+  if (await chrome.permissions.contains(wanted)) return true;
+
+  setStatus('Chrome is asking for access to page resources — this is needed to embed fonts and images.');
+  try {
+    return await chrome.permissions.request(wanted);
+  } catch {
+    return false;
+  }
+}
+
 function setStatus(message: string, kind: 'ok' | 'error' | 'info' = 'info'): void {
   status.textContent = message;
   status.dataset.kind = kind;
@@ -124,6 +145,17 @@ function render(result: CaptureResult): void {
 
 captureButton.addEventListener('click', async () => {
   captureButton.disabled = true;
+
+  if (!(await ensureHostAccess())) {
+    captureButton.disabled = false;
+    setStatus(
+      'Without access to page resources, fonts and images from other domains cannot be embedded ' +
+        'and the snapshot will not render offline. Click capture again to grant it.',
+      'error',
+    );
+    return;
+  }
+
   setStatus('Screenshotting the page, then serialising the DOM…');
   const response = await sendToBackground<CaptureResult>({ type: 'capture/start' });
   captureButton.disabled = false;

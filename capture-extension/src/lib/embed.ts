@@ -114,7 +114,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
   };
 
   // 1. Stylesheet links that survived capture (cross-origin sheets the page could not read).
-  for (const link of Array.from(doc.querySelectorAll('link[rel~="stylesheet"][href]'))) {
+  for (const link of queryAllDeep(doc, 'link[rel~="stylesheet"][href]')) {
     const href = link.getAttribute('href') ?? '';
     if (!isExternalUrl(href)) continue;
     const absolute = resolveUrl(href, options.baseUrl);
@@ -138,7 +138,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
   }
 
   // 2. Anything else a <link> would pull at render time (icons, prefetch, fonts).
-  for (const link of Array.from(doc.querySelectorAll('link[href]'))) {
+  for (const link of queryAllDeep(doc, 'link[href]')) {
     const rel = (link.getAttribute('rel') ?? '').toLowerCase();
     const href = link.getAttribute('href') ?? '';
     if (!isExternalUrl(href)) continue;
@@ -152,7 +152,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
   }
 
   // 3. <style> blocks: fonts and background images live in url() references.
-  for (const style of Array.from(doc.querySelectorAll('style'))) {
+  for (const style of queryAllDeep(doc, 'style')) {
     const cssText = style.textContent ?? '';
     if (!cssText) continue;
     const from = style.getAttribute('data-demo-inlined-from') ?? options.baseUrl;
@@ -160,7 +160,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
   }
 
   // 4. Images, including srcset and <picture> sources.
-  for (const img of Array.from(doc.querySelectorAll('img, input[type="image"]'))) {
+  for (const img of queryAllDeep(doc, 'img, input[type="image"]')) {
     const src = img.getAttribute('src') ?? '';
     if (isExternalUrl(src)) {
       const dataUrl = await load(resolveUrl(src, options.baseUrl));
@@ -170,7 +170,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
     img.removeAttribute('loading');
     await rewriteSrcset(img, options.baseUrl, load);
   }
-  for (const source of Array.from(doc.querySelectorAll('source'))) {
+  for (const source of queryAllDeep(doc, 'source')) {
     const src = source.getAttribute('src') ?? '';
     if (isExternalUrl(src)) {
       const dataUrl = await load(resolveUrl(src, options.baseUrl));
@@ -182,13 +182,13 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
   }
 
   // 5. Inline style attributes (url() in a style="" attribute).
-  for (const element of Array.from(doc.querySelectorAll('[style*="url("]'))) {
+  for (const element of queryAllDeep(doc, '[style*="url("]')) {
     const styleAttr = element.getAttribute('style') ?? '';
     element.setAttribute('style', await inlineCssUrls(styleAttr, options.baseUrl, load));
   }
 
   // 6. SVG <image> and <use> external references.
-  for (const node of Array.from(doc.querySelectorAll('image, use'))) {
+  for (const node of queryAllDeep(doc, 'image, use')) {
     for (const attribute of ['href', 'xlink:href']) {
       const value = node.getAttribute(attribute);
       if (!value || !isExternalUrl(value)) continue;
@@ -199,7 +199,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
   }
 
   // 7. Video/audio: the poster frame is the demo asset, the media itself is not (§5, v1).
-  for (const media of Array.from(doc.querySelectorAll('video, audio'))) {
+  for (const media of queryAllDeep(doc, 'video, audio')) {
     const poster = media.getAttribute('poster') ?? '';
     if (media.tagName === 'VIDEO') {
       const dataUrl = isExternalUrl(poster) ? await load(resolveUrl(poster, options.baseUrl)) : poster || null;
@@ -208,6 +208,7 @@ export async function embedResources(doc: Document, options: EmbedOptions): Prom
       img.setAttribute('alt', media.getAttribute('aria-label') ?? 'Video');
       img.setAttribute('data-demo-replaced', 'video');
       copyLayoutAttributes(media, img);
+      applyMeasuredBox(media, img);
       media.replaceWith(img);
       result.warnings.push({
         kind: 'video-poster',
@@ -257,6 +258,34 @@ async function inlineCssUrls(
     if (dataUrl) replacements.set(ref.raw, dataUrl);
   }
   return rewriteCssUrls(withoutImports, replacements);
+}
+
+/**
+ * `querySelectorAll` stops at a `<template>` boundary, because its content is a detached
+ * fragment. Shadow roots arrive here as declarative templates, so every embedding pass
+ * has to descend into them or a component's images and fonts would be left pointing at
+ * the network — which the kiosk build forbids (§8.2).
+ */
+function queryAllDeep(root: Document | DocumentFragment, selector: string): Element[] {
+  const found = Array.from(root.querySelectorAll(selector));
+  for (const template of Array.from(root.querySelectorAll('template'))) {
+    found.push(...queryAllDeep((template as HTMLTemplateElement).content, selector));
+  }
+  return found;
+}
+
+/**
+ * A <video> is laid out by CSS that selects on the tag name, so the <img> that replaces
+ * its poster inherits none of it and renders at the poster's natural size. The content
+ * script measured the element while it still had layout; re-apply that box here.
+ */
+function applyMeasuredBox(from: Element, to: Element): void {
+  const box = from.getAttribute('data-demo-box');
+  const [width = NaN, height = NaN] = (box ?? '').split('x').map(Number);
+  if (!(width >= 1) || !(height >= 1)) return;
+  const existing = to.getAttribute('style') ?? '';
+  to.setAttribute('style', `${existing}${existing && !existing.endsWith(';') ? ';' : ''}width:${width}px;height:${height}px;object-fit:contain;`);
+  to.removeAttribute('data-demo-box');
 }
 
 function copyLayoutAttributes(from: Element, to: Element): void {

@@ -16,6 +16,7 @@ export const CaptureWarningSchema = z
       'webgl-rasterised',
       'video-poster',
       'shadow-root-closed',
+      'shadow-dom-flattened',
       'resource-fetch-failed',
       'resource-too-large',
       'pii-detected',

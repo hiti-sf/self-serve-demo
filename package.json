@@ -31,6 +31,7 @@
     "smoke:web": "node builds/web/scripts/build-web.mjs && tsx scripts/smoke-web.mts",
     "smoke:kiosk": "node builds/kiosk/scripts/build-kiosk.mjs --all && tsx scripts/smoke-kiosk.mts",
     "smoke:editor": "pnpm build:editor && pnpm build:player && tsx scripts/smoke-editor.mts",
+    "smoke:capture": "pnpm build:extension && tsx scripts/smoke-capture.mts",
     "verify": "pnpm typecheck && pnpm test && pnpm validate:demos && pnpm lint:no-secrets"
   },
   "devDependencies": {

@@ -140,8 +140,25 @@ function buildMeta(
   });
 }
 
+/**
+ * Cross-origin embedding runs through this worker's privileged fetch, which needs a
+ * host permission. Without it every external font, image and stylesheet is dropped and
+ * the snapshot renders incomplete offline — a failure that is invisible until a
+ * tradeshow. Fail loudly instead.
+ */
+async function assertHostAccess(): Promise<void> {
+  const granted = await chrome.permissions.contains({ origins: ['<all_urls>'] });
+  if (!granted) {
+    throw new Error(
+      'This extension has not been granted access to page resources, so fonts and images from ' +
+        'other domains cannot be embedded. Open the extension and click capture again to grant it.',
+    );
+  }
+}
+
 async function runCapture(explicitTabId?: number): Promise<CaptureResult> {
   const startedAt = Date.now();
+  await assertHostAccess();
   const tab = await activeTab(explicitTabId);
   const tabId = tab.id!;
   const url = tab.url ?? '';

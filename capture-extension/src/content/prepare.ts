@@ -226,7 +226,13 @@ export function prepareForCapture(doc: Document): PrepareResult {
   // ---- 5. Video ------------------------------------------------------------------
   for (const video of Array.from(doc.querySelectorAll('video'))) {
     const element = video as HTMLVideoElement;
-    if (element.getAttribute('poster')) continue; // embed.ts turns the poster into an <img>
+    // embed.ts swaps the poster for an <img>, which the page's `video { … }` rules will
+    // not match. Record the box now, while the element still has layout.
+    const box = element.getBoundingClientRect();
+    if (box.width >= 1 && box.height >= 1) {
+      setAttributeWithUndo(element, 'data-demo-box', `${Math.round(box.width)}x${Math.round(box.height)}`);
+    }
+    if (element.getAttribute('poster')) continue;
     const frame = grabVideoFrame(doc, element);
     if (frame) {
       setAttributeWithUndo(element, 'poster', frame);

@@ -68,30 +68,76 @@ the `/api/lead` route records it after the CRM returns a `leadId`.
 
 ## What is verified, and how
 
-Everything below runs in this repo. `pnpm verify` covers the non-browser gates; the four
+Everything below runs in this repo. `pnpm verify` covers the non-browser gates; the five
 `smoke:*` scripts drive a real headless Chromium.
 
 | Gate | Command | Result |
 |---|---|---|
-| Unit tests | `pnpm test` | 243 tests |
+| Unit tests | `pnpm test` | 249 tests |
 | Demo content | `pnpm validate:demos` | 3 demos, 10 snapshots, 16 selectors |
 | Credentials (§11) | `pnpm lint:no-secrets` | fails on a planted secret, and flags bundle inclusion specifically |
 | Kiosk offline guarantee (§8.2) | `pnpm build:kiosk --all` | build fails on any external URL |
+| **M1 — capture extension** | `pnpm smoke:capture` | 34/34 against a fixture (see below) |
 | **M2 — player** | `pnpm smoke:player` | 18/18 per flow |
 | **M3 — editor** | `pnpm smoke:editor` | 35/35 |
 | **M4 — gated web** | `pnpm smoke:web` | 26/26 |
 | **M5 — kiosk** | `pnpm smoke:kiosk` | 23/23 |
 
-### M1 is the gate that cannot be closed here
+### M1: what is closed, and what still needs the tenant
 
 M1's acceptance is five real InLumin screens captured from the live product, rendering
-pixel-faithful offline, including a canvas-heavy view. Everything downstream of
-`rrweb.snapshot()` is unit-tested against jsdom — sanitisation, resource embedding, CSS
-rewriting, serialisation, crop geometry, PII detection — and the synthetic snapshots are
-verified to render with networking disabled in headless Chromium. But the extension itself
-needs a real Chrome and a real product page, so **M1 stays open until someone runs it
-against the InLumin tenant with a human looking at the output.** That is the one milestone
-where a green test here would be a false signal.
+pixel-faithful offline. That last part needs the tenant. Everything *else* about M1 is now
+mechanically verified.
+
+`pnpm smoke:capture` loads the built MV3 extension into a real Chrome and drives a genuine
+capture through all four contexts — content script, service worker, offscreen document, and
+the message protocol between them — against
+[`capture-extension/test-fixture/app.html`](./capture-extension/test-fixture/app.html), a
+page shaped like a product dashboard that carries every hard case §5 names:
+
+- a stylesheet, `@font-face`, background image, `<img>` and `<iframe>` on **another origin**,
+  with no CORS header, so the page itself cannot read them and only the worker's privileged
+  fetch can
+- a 2D `<canvas>` and a WebGL canvas, both drawn by script
+- a `<video>` with a poster, and an open shadow root
+- post-interaction state applied *after load* — typed text, a chosen `<option>`, a checked
+  box, an open menu, an open modal, a scrolled inner container — so a serialiser that reads
+  page source instead of the live DOM captures the wrong thing
+- text shaped like an email address, a phone number and a patient ID, for the PII pass
+
+Then it renders the resulting snapshot **with DNS dead** and reads the DOM back.
+
+What this does *not* prove: that InLumin's own markup serialises faithfully, and that a human
+judges the result a good demo. Only a capture against the tenant shows that, so **M1's
+sign-off still belongs to a person with tenant access** — see the runbook in
+[capture-extension/README.md](./capture-extension/README.md). What has changed is that the
+extension machinery is no longer the risk.
+
+### Bugs the fixture capture found that unit tests could not
+
+Every one of these was invisible to 249 passing unit tests, and each would have wasted a
+session in front of the live tenant:
+
+1. **The content script could never be injected — in any context.** postcss (a transitive
+   dependency of rrweb-snapshot) contains a literal `U+FFFE`. Chrome's script loader rejects
+   Unicode noncharacters and reports it as `"It isn't UTF-8 encoded"`, which is doubly
+   misleading: the file decodes fine, and nothing about the build looks wrong. The build now
+   escapes noncharacters and lone surrogates in emitted JS.
+2. **Nothing ever requested the optional host permission.** The manifest declares
+   `<all_urls>` as *optional* — correct, and what §11 asks for — but no code called
+   `chrome.permissions.request()`, so cross-origin fonts and images could never be embedded.
+   The popup now requests it from its click handler (the only place Chrome allows), and the
+   worker refuses to capture without it rather than emitting a silently degraded snapshot.
+3. **Every shadow root captured as an empty element.** rrweb serialises open shadow roots
+   correctly and the rebuild re-creates them — but a snapshot is serialised with
+   `outerHTML`, which does not include shadow content. Any design system built on web
+   components would have captured as blank boxes. Shadow roots are now rewritten as
+   declarative `<template shadowrootmode="open">`, which the parser reinstates with no script
+   involved; the embedding passes descend into templates so a component's own images and
+   fonts are inlined too.
+4. **Video posters rendered at the file's natural size.** A `<video>` is laid out by CSS that
+   selects on the tag name, so the `<img>` replacing its poster inherited none of it. The
+   content script now records the measured box while the element still has layout.
 
 ### Bugs the browser found that unit tests could not
 

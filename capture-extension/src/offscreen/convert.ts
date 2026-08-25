@@ -2,6 +2,7 @@ import { createCache, createMirror, rebuildIntoSandboxedIframe } from 'rrweb-sna
 import type { CaptureWarning } from '@demo-platform/shared';
 import { embedResources, type FetchedResource } from '../lib/embed.js';
 import { sanitiseDocument } from '../lib/sanitise.js';
+import { flattenShadowRoots } from '../lib/shadow.js';
 import {
   applyRedactions,
   scanDocumentForPii,
@@ -17,7 +18,9 @@ import { fail, ok, type ConvertedCapture, type Message, type RawCapture, type Re
  * HTML document (SPEC §5).
  *
  * Pipeline order matters:
- *   rebuild → sanitise → embed → paste screenshot crops → CSP + serialise → PII scan
+ *   rebuild → flatten shadow roots → sanitise → embed → paste crops → CSP + serialise → PII
+ * Shadow roots become declarative <template>s first, because `outerHTML` cannot
+ * serialise a live shadow root and every later pass already descends into templates.
  * Sanitising before embedding means we never fetch a resource for an element that is
  * about to be removed; the CSP is added last because sanitise strips existing ones.
  */
@@ -106,6 +109,8 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 async function convert(raw: RawCapture, fallbackPng: string): Promise<ConvertedCapture> {
   const { doc, dispose } = rebuildDocument(raw.tree);
   try {
+    const flattened = flattenShadowRoots(doc);
+
     const sanitised = sanitiseDocument(doc);
 
     const embedded = await embedResources(doc, {
@@ -127,6 +132,7 @@ async function convert(raw: RawCapture, fallbackPng: string): Promise<ConvertedC
 
     const warnings: CaptureWarning[] = [
       ...raw.warnings,
+      ...flattened.warnings,
       ...sanitised.warnings,
       ...embedded.warnings,
       ...cropWarnings,
