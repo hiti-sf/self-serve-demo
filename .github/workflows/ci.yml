@@ -93,6 +93,9 @@ jobs:
   acceptance:
     name: Acceptance (${{ matrix.gate }})
     runs-on: ubuntu-latest
+    # These gates drive a browser, and a browser that wedges would otherwise hold the
+    # runner for six hours. Every gate finishes in two to four minutes.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -135,15 +138,20 @@ jobs:
       # never carried that restriction.
       - name: Install Chromium (capture gate only)
         if: matrix.gate == 'capture'
+        timeout-minutes: 6
         run: |
-          INSTALL_DIR="$RUNNER_TEMP/chromium"
-          npx --yes @puppeteer/browsers install chromium@latest --path "$INSTALL_DIR"
+          set -x
+          INSTALL_DIR="$RUNNER_TEMP/browser"
+          # chromium first, since it certainly has no --load-extension restriction;
+          # Chrome for Testing second, which is the supported automation build.
+          npx --yes @puppeteer/browsers install chromium@latest --path "$INSTALL_DIR" \
+            || npx --yes @puppeteer/browsers install chrome@stable --path "$INSTALL_DIR"
           # Resolve from the filesystem rather than by parsing stdout: the install layout
           # is stable, the log format is not.
-          BROWSER="$(find "$INSTALL_DIR" -type f -name chrome -perm -u+x | head -1)"
+          BROWSER="$(find "$INSTALL_DIR" -type f \( -name chrome -o -name 'chrome-headless-shell' \) -perm -u+x | head -1)"
           if [ -z "$BROWSER" ]; then
-            echo "No Chromium binary under $INSTALL_DIR after install:" >&2
-            find "$INSTALL_DIR" -maxdepth 4 >&2
+            echo "No browser binary under $INSTALL_DIR after install:" >&2
+            find "$INSTALL_DIR" -maxdepth 5 >&2
             exit 1
           fi
           echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
@@ -153,6 +161,7 @@ jobs:
       # carries every hard case §5 names, then the snapshot rendered with DNS dead.
       - name: M1 — capture extension
         if: matrix.gate == 'capture'
+        timeout-minutes: 10
         run: pnpm smoke:capture
 
       # M2: snapshots render sandboxed, hotspots anchor by selector and survive a

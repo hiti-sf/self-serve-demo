@@ -38,6 +38,19 @@ function check(name: string, ok: unknown, detail = ''): void {
   console.log(`  ${ok ? '✓' : '✗'} ${name}${!ok && detail ? ` — ${detail}` : ''}`);
 }
 
+/**
+ * A browser that never starts, or one that starts and never answers, would otherwise
+ * leave this script waiting until the CI runner's own timeout — hours later, with no
+ * output. Bound the whole run instead, and say what had passed when the clock ran out.
+ */
+const BUDGET_MS = Number(process.env.CAPTURE_SMOKE_TIMEOUT_MS ?? 10 * 60_000);
+const watchdog = setTimeout(() => {
+  console.error(`\nTimed out after ${Math.round(BUDGET_MS / 1000)}s waiting on the browser.`);
+  console.error(`${checks.filter((entry) => entry.ok).length}/${checks.length} checks had passed.`);
+  process.exit(1);
+}, BUDGET_MS);
+watchdog.unref();
+
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 try {
@@ -490,7 +503,10 @@ try {
       ],
       { stdio: 'ignore' },
     );
-    await new Promise((r) => renderer.on('exit', r));
+    await Promise.race([
+      new Promise((r) => renderer.on('exit', r)),
+      delay(90_000).then(() => renderer.kill('SIGKILL')),
+    ]);
     await rm(offlineProfile, { recursive: true, force: true });
 
     let renderedBytes = 0;
@@ -561,5 +577,9 @@ try {
   await rm(testExtensionDir, { recursive: true, force: true }).catch(() => {});
 }
 
+// The run reached its conclusion, so the watchdog has nothing left to guard. Without
+// this, a slow teardown on a loaded runner could turn a passing run into a timeout.
+clearTimeout(watchdog);
+
 console.log(`${checks.length - failures}/${checks.length} checks passed.`);
-if (failures > 0) process.exit(1);
+process.exit(failures > 0 ? 1 : 0);
