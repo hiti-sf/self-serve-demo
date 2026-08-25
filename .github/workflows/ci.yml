@@ -197,3 +197,7 @@ jobs:
           path: .smoke
           retention-days: 7
           if-no-files-found: ignore
+          # .smoke is a dotfile, and this action skips hidden paths by default — without
+          # this the upload silently finds nothing, which is how the capture gate's
+          # before/after images went missing on every run so far.
+          include-hidden-files: true

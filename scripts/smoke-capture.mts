@@ -189,8 +189,8 @@ interface Target {
   webSocketDebuggerUrl?: string;
 }
 
-async function targets(): Promise<Target[]> {
-  const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+async function targets(onPort = port): Promise<Target[]> {
+  const response = await fetch(`http://127.0.0.1:${onPort}/json/list`);
   return (await response.json()) as Target[];
 }
 
@@ -487,8 +487,13 @@ try {
       (meta.anchorHints ?? []).slice(0, 3).map((h) => h.selector).join(' | '));
 
     // ---- and the one that matters: does it render offline? -------------------
+    // A second browser with nothing resolving. Driven over CDP rather than with the
+    // one-shot --screenshot flag: that flag wedged indefinitely on the Chromium CI
+    // installs, and a hang tells you nothing, where a protocol error names the step
+    // that failed.
     const offlineProfile = await mkdtemp(join(tmpdir(), 'capture-offline-'));
     const shot = join(outDir, 'snapshot-rendered-offline.png');
+    const offlinePort = await freePort();
     const renderer = spawn(
       binary,
       [
@@ -500,24 +505,48 @@ try {
         '--window-size=1440,900',
         // Nothing resolves. If the snapshot needs the network, this render shows it.
         '--host-resolver-rules=MAP * ~NOTFOUND',
+        // …which also means every background service Chrome pings on startup is now a
+        // hanging DNS lookup. Turn them off rather than wait them out.
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-background-networking',
+        '--disable-component-update',
+        '--disable-client-side-phishing-detection',
+        '--disable-domain-reliability',
+        '--metrics-recording-only',
+        `--remote-debugging-port=${offlinePort}`,
         `--user-data-dir=${offlineProfile}`,
-        `--screenshot=${shot}`,
-        `file://${join(outDir, 'snapshot.html')}`,
+        'about:blank',
       ],
       { stdio: 'ignore' },
     );
-    await Promise.race([
-      new Promise((r) => renderer.on('exit', r)),
-      delay(90_000).then(() => renderer.kill('SIGKILL')),
-    ]);
-    await rm(offlineProfile, { recursive: true, force: true });
 
     let renderedBytes = 0;
     try {
+      let blank: Target | undefined;
+      for (let attempt = 0; attempt < 120 && !blank; attempt += 1) {
+        await delay(250);
+        blank = (await targets(offlinePort).catch(() => [])).find((t) => t.type === 'page');
+      }
+      if (!blank) throw new Error('the offline browser never exposed a page target');
+
+      const offline = await attach(blank);
+      await offline.send('Page.enable');
+      await offline.send('Page.navigate', { url: `file://${join(outDir, 'snapshot.html')}` });
+      await delay(2500);
+      const png = (await offline.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })) as {
+        data: string;
+      };
+      await writeFile(shot, Buffer.from(png.data, 'base64'));
       renderedBytes = (await stat(shot)).size;
-    } catch {
-      /* nothing written */
+      offline.close();
+    } catch (error) {
+      console.log(`     offline render failed: ${(error as Error).message}`);
+    } finally {
+      renderer.kill('SIGKILL');
+      await rm(offlineProfile, { recursive: true, force: true }).catch(() => {});
     }
+
     check('the snapshot renders with DNS dead', renderedBytes > 10_000, `${renderedBytes} bytes`);
 
     // A screenshot proves it painted; it does not prove the *right* thing painted. Load
