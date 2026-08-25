@@ -11,6 +11,7 @@
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer as createProbe } from 'node:net';
 import { cp, mkdtemp, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -90,7 +91,16 @@ check(
 );
 check('the bundle explains itself to a sales engineer', (await readdir(stick)).includes('READ-ME-FIRST.txt'));
 
-const kioskPort = 8123;
+/** A free port rather than a fixed one, so a stray process cannot answer for this run. */
+const kioskPort = await new Promise<number>((resolvePort, reject) => {
+  const probe = createProbe();
+  probe.on('error', reject);
+  probe.listen(0, '127.0.0.1', () => {
+    const address = probe.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    probe.close(() => resolvePort(port));
+  });
+});
 let launcher: ChildProcess | null = null;
 let launcherOutput = '';
 

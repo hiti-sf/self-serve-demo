@@ -5,10 +5,6 @@ on:
     branches: ['**']
   pull_request:
 
-env:
-  # The acceptance gates drive a real browser; the runner image ships Chromium.
-  CHROMIUM_PATH: /usr/bin/chromium-browser
-
 jobs:
   # Fast gate: everything that does not need a browser.
   checks:
@@ -17,9 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` — package.json's packageManager field pins pnpm, and specifying
+      # it in both places is an error the action refuses to guess its way past.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -50,9 +46,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` — package.json's packageManager field pins pnpm, and specifying
+      # it in both places is an error the action refuses to guess its way past.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -96,9 +92,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` — package.json's packageManager field pins pnpm, and specifying
+      # it in both places is an error the action refuses to guess its way past.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -113,11 +109,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Install Chromium
+      # The runner image ships Google Chrome. Resolve it rather than installing a
+      # browser, and fail loudly if the image ever stops providing one.
+      - name: Locate the browser
         run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser || sudo snap install chromium
-          echo "CHROMIUM_PATH=$(command -v chromium-browser || command -v chromium)" >> "$GITHUB_ENV"
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$BROWSER" ]; then
+            echo "No Chrome or Chromium on this runner; the acceptance gates need one." >&2
+            exit 1
+          fi
+          echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
 
       # M2: snapshots render sandboxed, hotspots anchor by selector and survive a
       # resize, keyboard nav and chapters work, a broken snapshot falls back to its image.
