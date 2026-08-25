@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import { mkdtemp, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -46,9 +47,27 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Ask the OS for a port nobody is using. Deriving one from the pid looks deterministic
+ * and is not: two gates on the same runner, or a browser left over from an earlier step,
+ * can hold the number, and Chrome that cannot bind its debugging port starts up fine and
+ * simply never answers — which reads as "the browser did not start" fifteen seconds later.
+ */
+export function freePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.on('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const address = probe.address();
+      const port = typeof address === 'object' && address ? address.port : 0;
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
 export async function launchBrowser({ width = 1440, height = 900, extraArgs = [] } = {}) {
   const binary = await findChromium();
-  const port = 9222 + Math.floor((process.pid % 500));
+  const port = await freePort();
   const profile = await mkdtemp(join(tmpdir(), 'demo-smoke-'));
 
   const child = spawn(
@@ -73,9 +92,18 @@ export async function launchBrowser({ width = 1440, height = 900, extraArgs = []
     stderr += String(chunk);
   });
 
-  // Wait for the debugging endpoint.
+  // A browser that dies on startup should say so immediately rather than being waited
+  // out: the exit code is the diagnosis, and the wait only delays it.
+  let exited = null;
+  child.on('exit', (code, signal) => {
+    exited = { code, signal };
+  });
+
+  // Wait for the debugging endpoint. A cold start on a loaded CI runner is routinely
+  // slower than a warm one on a workstation, so this is generous — it costs nothing when
+  // the browser is quick, and a gate that fails on a slow morning is worse than useless.
   let target = null;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < 150 && !exited; attempt += 1) {
     await delay(200);
     try {
       const response = await fetch(`http://127.0.0.1:${port}/json/list`);
@@ -88,7 +116,10 @@ export async function launchBrowser({ width = 1440, height = 900, extraArgs = []
   }
   if (!target) {
     child.kill('SIGKILL');
-    throw new Error(`Chromium did not expose a debugging target.\n${stderr}`);
+    const how = exited
+      ? `it exited with ${exited.signal ? `signal ${exited.signal}` : `code ${exited.code}`}`
+      : `it stayed up for 30s without answering on port ${port}`;
+    throw new Error(`Chromium did not expose a debugging target: ${how}.\n${binary}\n${stderr}`);
   }
 
   const socket = new WebSocket(target.webSocketDebuggerUrl);

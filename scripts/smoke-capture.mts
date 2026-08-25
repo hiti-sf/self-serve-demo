@@ -25,7 +25,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promi
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { findChromium } from './cdp.mjs';
+import { findChromium, freePort } from './cdp.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 const extensionDir = join(repoRoot, 'capture-extension/dist');
@@ -149,7 +149,10 @@ await writeFile(
 
 const binary = await findChromium();
 const profile = await mkdtemp(join(tmpdir(), 'capture-profile-'));
-const port = 9400 + (process.pid % 300);
+// A free port, not one derived from the pid: a number that merely looks unique can
+// already be held, and Chrome that cannot bind its debugging port starts fine and never
+// answers — which reads as "the extension did not load" much later.
+const port = await freePort();
 
 const chrome: ChildProcess = spawn(
   binary,
