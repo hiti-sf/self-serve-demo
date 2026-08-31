@@ -77,7 +77,7 @@ Everything below runs in this repo. `pnpm verify` covers the non-browser gates; 
 | Demo content | `pnpm validate:demos` | 3 demos, 10 snapshots, 16 selectors |
 | Credentials (§11) | `pnpm lint:no-secrets` | fails on a planted secret, and flags bundle inclusion specifically |
 | Kiosk offline guarantee (§8.2) | `pnpm build:kiosk --all` | build fails on any external URL |
-| **M1 — capture extension** | `pnpm smoke:capture` | 34/34 against a fixture (see below) |
+| **M1 — capture extension** | `pnpm smoke:capture` | 36/36 against a fixture (see below) |
 | **M2 — player** | `pnpm smoke:player` | 18/18 per flow |
 | **M3 — editor** | `pnpm smoke:editor` | 35/35 |
 | **M4 — gated web** | `pnpm smoke:web` | 26/26 |
@@ -89,7 +89,7 @@ M1's acceptance is five real InLumin screens captured from the live product, ren
 pixel-faithful offline. That last part needs the tenant. Everything *else* about M1 is now
 mechanically verified.
 
-`pnpm smoke:capture` loads the built MV3 extension into a real Chrome and drives a genuine
+`pnpm smoke:capture` loads the built MV3 extension into a real Chromium and drives a genuine
 capture through all four contexts — content script, service worker, offscreen document, and
 the message protocol between them — against
 [`capture-extension/test-fixture/app.html`](./capture-extension/test-fixture/app.html), a
@@ -105,7 +105,15 @@ page shaped like a product dashboard that carries every hard case §5 names:
   page source instead of the live DOM captures the wrong thing
 - text shaped like an email address, a phone number and a patient ID, for the PII pass
 
-Then it renders the resulting snapshot **with DNS dead** and reads the DOM back.
+Then it renders the resulting snapshot **with DNS dead** and reads the DOM back — a
+screenshot proves something painted, not that the right thing painted, so the shadow root
+is checked for rehydrating and the poster for keeping the box its `<video>` occupied.
+
+It runs in CI on every push, on a Chromium provisioned for the job: branded Chrome no
+longer installs an unpacked extension from the command line at all, which is worth knowing
+before anyone tries to script a capture. Loading through `chrome://extensions` is
+unaffected. The gate uploads its before/after images as a build artefact, because the last
+mile of capture fidelity is a human judgement and someone has to be able to look.
 
 What this does *not* prove: that InLumin's own markup serialises faithfully, and that a human
 judges the result a good demo. Only a capture against the tenant shows that, so **M1's
