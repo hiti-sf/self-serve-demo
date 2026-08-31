@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-demo-capture-id="cap_synthetic_f1s2" data-demo-source-url="https://inlumin.demo.internal/requisitions/REQ-1042" data-demo-captured-at="2026-08-14T09:32:11.000Z" data-demo-viewport="1440x900" data-demo-document="1440x900">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; media-src data:; style-src 'unsafe-inline' data:; font-src data:; frame-src 'none'; script-src 'none'; form-action 'none'">
+<meta charset="utf-8">
+<title>REQ-1042 · InLumin</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#212529;background:#f4f5f3}
+.app{display:grid;grid-template-columns:216px 1fr;min-height:900px}
+.side{background:#212529;color:#fff;padding:18px 0 24px}
+.side .brand{padding:0 18px 22px}
+.logo{height:24px;width:132px;display:block}
+.nav{list-style:none;margin:0;padding:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 18px;color:rgba(255,255,255,.72);text-decoration:none;font-size:13px}
+.nav a.on{color:#fff;background:rgba(32,166,118,.18);border-left:3px solid #20A676;padding-left:15px;font-weight:600}
+.nav .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
+.side .org{margin:26px 18px 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:rgba(255,255,255,.5)}
+.main{display:flex;flex-direction:column;background:#f4f5f3}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 26px;background:#fff;border-bottom:1px solid #e6e6e6}
+.crumbs{font-size:12px;color:#6c757d}
+.crumbs b{color:#212529;font-weight:600}
+.top-actions{display:flex;align-items:center;gap:10px}
+.search{width:230px;padding:7px 10px;border:1px solid #e0e0e0;border-radius:6px;font:inherit;font-size:13px;color:#212529;background:#fcfcf5}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1B91A3,#71BF44);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}
+.wrap{padding:22px 26px 30px;flex:1}
+h1{font-size:20px;margin:0 0 4px}
+h2{font-size:15px;margin:0 0 10px}
+.sub{color:#6c757d;font-size:13px;margin:0 0 18px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.btn{font:inherit;font-size:13px;padding:8px 14px;border-radius:6px;border:1px solid transparent;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:#20A676;color:#fff;font-weight:600}
+.btn-outline{background:#fff;border-color:#d5d8d4;color:#212529}
+.btn-ghost{background:transparent;color:#6c757d}
+.btn-sm{font-size:12px;padding:5px 10px}
+.card{background:#fff;border:1px solid #e6e6e6;border-radius:10px}
+.card+.card{margin-top:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e6e6e6}
+.card-h h2{margin:0}
+.card-b{padding:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#6c757d;font-weight:600;padding:10px 16px;background:#fcfcf5;border-bottom:1px solid #e6e6e6}
+td{padding:11px 16px;border-bottom:1px solid #f0f0ee;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.pill-wait{background:#fff4d6;color:#8a6100}
+.pill-ok{background:#e2f5eb;color:#146b4c}
+.pill-open{background:#e4f1f6;color:#0e6468}
+.pill-risk{background:#fdeaea;color:#a02020}
+.muted{color:#6c757d}
+.small{font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.tile{background:#fff;border:1px solid #e6e6e6;border-radius:10px;padding:14px 16px}
+.tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6c757d}
+.tile .v{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.tile .d{font-size:12px;margin-top:2px}
+.up{color:#146b4c}
+.down{color:#a02020}
+.field{display:block;margin-bottom:14px}
+.field span{display:block;font-size:12px;color:#6c757d;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid #d5d8d4;border-radius:6px;font:inherit;font-size:13px;background:#fff;color:#212529}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.chk{display:flex;gap:9px;align-items:flex-start;font-size:13px;margin-bottom:10px}
+.bar{height:6px;border-radius:999px;background:#eceee9;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#0F929D,#38AD66,#8BC33F)}
+.modal-scrim{position:fixed;inset:0;background:rgba(16,20,22,.5)}
+.modal{position:fixed;top:96px;left:50%;transform:translateX(-50%);width:620px;background:#fff;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden}
+.modal-h{padding:16px 20px;border-bottom:1px solid #e6e6e6}
+.modal-h h2{margin:0 0 2px}
+.modal-b{padding:18px 20px;max-height:420px;overflow:auto}
+.modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid #e6e6e6;background:#fcfcf5}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.check:last-child{border-bottom:0}
+.tick{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:0 0 18px}
+.tick-ok{background:#20A676}
+.tick-warn{background:#F9B200}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{position:relative;padding:0 0 16px 22px;border-left:2px solid #e6e6e6;font-size:13px}
+.timeline li:last-child{border-left-color:transparent;padding-bottom:0}
+.timeline li:before{content:"";position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#20A676}
+.compare{display:grid;grid-template-columns:170px repeat(3,1fr);gap:0;font-size:13px}
+.compare>div{padding:11px 14px;border-bottom:1px solid #f0f0ee}
+.compare .hd{background:#fcfcf5;font-weight:600;border-bottom:1px solid #e6e6e6}
+.compare .lbl{color:#6c757d}
+.win{background:#f2faf6}
+.chart-frame{border:1px solid #e6e6e6;border-radius:8px;padding:10px;background:#fff}
+.legend{display:flex;gap:16px;font-size:12px;color:#6c757d;margin-top:8px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+</style>
+<style data-demo-player-reset>html{overflow:hidden !important}body{margin:0}*{animation:none !important;transition:none !important;caret-color:transparent !important}</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 132 24" role="img" aria-label="InLumin"><defs><linearGradient id="ilg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0F929D"/><stop offset="0.5" stop-color="#38AD66"/><stop offset="1" stop-color="#8BC33F"/></linearGradient></defs><rect x="0" y="3" width="18" height="18" rx="5" fill="url(#ilg)"/><circle cx="9" cy="12" r="4" fill="#fff"/><text x="26" y="17.5" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#ffffff">InLumin</text></svg></div>
+    <ul class="nav"><li><a href="#" data-nav="dashboard" class=""><span class="dot"></span>Dashboard</a></li><li><a href="#" data-nav="requisitions" class="on"><span class="dot"></span>Requisitions</a></li><li><a href="#" data-nav="orders" class=""><span class="dot"></span>Purchase orders</a></li><li><a href="#" data-nav="suppliers" class=""><span class="dot"></span>Suppliers</a></li><li><a href="#" data-nav="invoices" class=""><span class="dot"></span>Invoices</a></li><li><a href="#" data-nav="analytics" class=""><span class="dot"></span>Analytics</a></li></ul>
+    <div class="org">Strides Pharma · Bengaluru<br>Procurement workspace</div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <div class="crumbs">Procurement / Requisitions / <b>REQ-1042</b></div>
+      <div class="top-actions">
+        <input class="search" type="text" value="" placeholder="Search requisitions, POs, suppliers" aria-label="Search">
+        
+        <div class="avatar">RI</div>
+      </div>
+    </header>
+    <div class="wrap">
+      <div class="between">
+        <div>
+          <h1>REQ-1042 · Excipients replenishment</h1>
+          <p class="sub">Draft · created by R. Iyer · Bengaluru Unit 3 · needed by 28 Aug 2026</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-outline" type="button" data-testid="save-draft">Save draft</button>
+          <button class="btn btn-primary" type="button" data-testid="submit-for-approval" id="submit-for-approval">Submit for approval</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Requisition details</h2><span class="pill pill-open">Contract pricing applied</span></div>
+        <div class="card-b">
+          <div class="grid2">
+            <label class="field"><span>Title</span>
+              <input type="text" value="Excipients replenishment — Q3 campaign" data-testid="req-title"></label>
+            <label class="field"><span>Cost centre</span>
+              <select data-testid="req-cost-centre">
+                <option>CC-1180 · Formulation</option>
+                <option selected>CC-2240 · Manufacturing Unit 3</option>
+                <option>CC-3310 · Quality control</option>
+              </select></label>
+            <label class="field"><span>Category</span>
+              <select data-testid="req-category">
+                <option selected>Excipients</option>
+                <option>Packaging</option>
+                <option>Lab consumables</option>
+              </select></label>
+            <label class="field"><span>Needed by</span>
+              <input type="text" value="28 Aug 2026" data-testid="req-needed-by"></label>
+          </div>
+          <label class="field"><span>Justification</span>
+            <textarea rows="2" data-testid="req-justification">Stock cover falls below 21 days on 30 Aug. Contract CT-2291 pricing confirmed with both suppliers.</textarea></label>
+          <div class="chk"><input type="checkbox" checked data-testid="req-gmp-confirmed">
+            <span>Materials are GMP-qualified for the receiving site</span></div>
+          <div class="chk"><input type="checkbox" checked data-testid="req-budget-checked">
+            <span>Checked against the Q3 category budget (₹ 18.0L remaining)</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2>Line items</h2>
+          <button class="btn btn-outline btn-sm" type="button" data-testid="add-line-item">Add line item</button>
+        </div>
+        <table id="line-items">
+          <thead><tr><th>Material</th><th>Preferred supplier</th><th class="num">Quantity</th>
+            <th class="num">Contract rate</th><th class="num">Amount</th><th></th></tr></thead>
+          <tbody><tr><td>Microcrystalline cellulose PH-102</td><td class="muted">Vitalis Labs</td><td class="num">250 kg</td><td class="num">₹ 412.00</td><td class="num">₹ 1,03,000</td><td><button class="btn btn-ghost btn-sm" type="button">Remove</button></td></tr><tr><td>Croscarmellose sodium</td><td class="muted">Vitalis Labs</td><td class="num">80 kg</td><td class="num">₹ 1,180.00</td><td class="num">₹ 94,400</td><td><button class="btn btn-ghost btn-sm" type="button">Remove</button></td></tr><tr><td>HPMC capsules, size 0</td><td class="muted">Meridian Polymers</td><td class="num">500 k</td><td class="num">₹ 2,086.00</td><td class="num">₹ 10,43,100</td><td><button class="btn btn-ghost btn-sm" type="button">Remove</button></td></tr></tbody>
+        </table>
+        <div class="card-b" style="display:flex;justify-content:flex-end;gap:28px">
+          <div class="muted small">3 lines · all on contract CT-2291</div>
+          <div><span class="muted small">Total</span> <b style="font-size:16px">₹ 12,40,500</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

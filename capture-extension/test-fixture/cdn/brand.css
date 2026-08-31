@@ -1,0 +1,21 @@
+/* Served from a second origin: exercises the cross-origin stylesheet path, which the
+   page itself cannot read and only the service worker's privileged fetch can embed. */
+@font-face {
+  font-family: 'FixtureSans';
+  src: url('./fixture-font.woff2') format('woff2');
+  font-weight: 700;
+}
+.brand-title {
+  font-family: 'FixtureSans', system-ui, sans-serif;
+  color: #0f929d;
+  letter-spacing: -0.01em;
+}
+.brand-chip {
+  background-image: url('./chip.png');
+  background-size: cover;
+  width: 64px;
+  height: 24px;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 4px;
+}

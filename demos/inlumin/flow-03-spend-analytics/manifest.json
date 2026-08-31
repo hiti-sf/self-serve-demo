@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "1.0",
+  "demoId": "inlumin-flow-03",
+  "product": "InLumin",
+  "title": "From spend dashboard to a funded savings plan",
+  "description": "Eight quarters of spend, one category drill-down, and four ranked savings initiatives traced back to the underlying purchase orders. All data is synthetic.",
+  "theme": {
+    "primaryColor": "#20A676",
+    "accentColor": "#1B91A3",
+    "logo": "assets/inlumin-logo.svg",
+    "backgroundColor": "#0E1113"
+  },
+  "settings": {
+    "gated": true,
+    "showProgress": true,
+    "showChapterMenu": true,
+    "keyboardNav": true,
+    "idleResetMs": 0
+  },
+  "chapters": [
+    {
+      "chapterId": "ch-01",
+      "title": "Where the money goes",
+      "steps": [
+        "step-01",
+        "step-02"
+      ]
+    },
+    {
+      "chapterId": "ch-02",
+      "title": "What to do about it",
+      "steps": [
+        "step-03"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepId": "step-01",
+      "snapshot": "snapshots/step-01.html",
+      "fallbackImage": "snapshots/step-01.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": "Canvas-heavy screen for the M1 capture set: the chart is captured as a rasterised image, which is what the extension produces for a <canvas>.",
+      "hotspots": [
+        {
+          "hotspotId": "hs-01",
+          "anchor": {
+            "selector": "#spend-chart",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.52
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Charts survive the capture",
+            "body": "This visualisation is drawn on a canvas in the live product. The capture rasterises it into the snapshot, so it renders identically on a laptop with the wifi switched off.",
+            "position": "top"
+          }
+        },
+        {
+          "hotspotId": "hs-02",
+          "anchor": {
+            "selector": "#category-table",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.83
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Coverage is the lever, not the total",
+            "body": "Instruments run at 62% on contract with nine suppliers. That gap is where the savings sit — and it is one click from the transactions that produced it.",
+            "position": "top"
+          },
+          "advancesTo": "step-02"
+        }
+      ]
+    },
+    {
+      "stepId": "step-02",
+      "snapshot": "snapshots/step-02.html",
+      "fallbackImage": "snapshots/step-02.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "hotspots": [
+        {
+          "hotspotId": "hs-03",
+          "anchor": {
+            "selector": "#supplier-table",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.78
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "One supplier off contract, 14.6% of the category",
+            "body": "Acme Excipients is buying at list on ₹ 31.4L of spend. Nothing was rekeyed to find that — it falls out of the PO and contract data.",
+            "position": "top"
+          }
+        },
+        {
+          "hotspotId": "hs-04",
+          "anchor": {
+            "selector": "#open-savings",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.918,
+            "y": 0.117
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "Turn the finding into a plan",
+            "body": "Ranked opportunities, with the effort each one actually takes.",
+            "position": "left"
+          },
+          "advancesTo": "step-03"
+        }
+      ]
+    },
+    {
+      "stepId": "step-03",
+      "snapshot": "snapshots/step-03.html",
+      "fallbackImage": "snapshots/step-03.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "hotspots": [
+        {
+          "hotspotId": "hs-05",
+          "anchor": {
+            "selector": "#opportunities",
+            "strategy": "css"
+          },
+          "anchorFallback": {
+            "x": 0.575,
+            "y": 0.55
+          },
+          "trigger": "click",
+          "tooltip": {
+            "title": "₹ 33.1L, ranked by value and effort",
+            "body": "Every line traces back to the purchase orders and contract lines behind it, so the number survives a conversation with finance.",
+            "position": "top"
+          }
+        }
+      ]
+    }
+  ],
+  "endScreen": {
+    "headline": "₹ 33.1L of savings, evidenced down to the purchase order",
+    "body": "Synthetic data on a demo tenant. Opportunity models are tuned to your categories and contract structure.",
+    "cta": {
+      "label": "Book a walkthrough",
+      "url": "https://pivotpath.example/inlumin/walkthrough"
+    },
+    "secondaryCta": {
+      "label": "Explore another product",
+      "url": "https://pivotpath.example/products"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Pivot Path Demo Capture",
+  "version": "1.0.0",
+  "description": "Capture a live product screen as a self-contained, script-free snapshot for the demo platform.",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "scripting", "downloads", "offscreen", "storage"],
+  "optional_host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background/service-worker.js", "type": "module" },
+  "action": { "default_popup": "popup/popup.html", "default_title": "Capture step" },
+  "icons": { "128": "icons/icon-128.png" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

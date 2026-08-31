@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>InLumin-shaped fixture · capture extension test</title>
+
+    <!--
+      Deliberately hostile to a naive serialiser, and representative of a real product
+      screen. Every hard case SPEC §5 names is here:
+
+        - a stylesheet from ANOTHER ORIGIN (the page cannot read its rules; only the
+          service worker's privileged fetch can embed it)
+        - a @font-face and a background-image inside that cross-origin stylesheet
+        - an <img> from the other origin
+        - a <canvas> chart drawn by script
+        - a WebGL canvas
+        - a cross-origin <iframe>
+        - a <video> with a poster
+        - an open shadow root
+        - post-interaction state: typed inputs, a checked box, a chosen option, an
+          expanded menu, an OPEN MODAL, and a scrolled inner container
+        - text that looks like personal data, to exercise the PII pass
+
+      Everything that makes the page interesting is applied by SCRIPT after load, so a
+      serialiser that reads page source instead of live DOM captures the wrong thing.
+    -->
+    <link rel="stylesheet" href="CDN_ORIGIN/brand.css" />
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        color: #212529;
+        background: #f4f5f3;
+      }
+      .app { display: grid; grid-template-columns: 210px 1fr; min-height: 900px; }
+      .side { background: #212529; color: #fff; padding: 18px 0; }
+      .side h1 { font-size: 15px; margin: 0 0 18px; padding: 0 18px; }
+      .nav { list-style: none; margin: 0; padding: 0; }
+      .nav a { display: block; padding: 8px 18px; color: rgba(255,255,255,.7); text-decoration: none; font-size: 13px; }
+      .nav a.on { color: #fff; background: rgba(32,166,118,.2); border-left: 3px solid #20a676; padding-left: 15px; }
+      .main { padding: 20px 24px; }
+      .row { display: flex; gap: 16px; align-items: flex-start; }
+      .card { background: #fff; border: 1px solid #e6e6e6; border-radius: 10px; margin-bottom: 16px; }
+      .card-h { padding: 12px 16px; border-bottom: 1px solid #e6e6e6; font-weight: 600; font-size: 13px; }
+      .card-b { padding: 16px; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th { text-align: left; font-size: 11px; text-transform: uppercase; color: #6c757d; padding: 9px 14px; background: #fcfcf5; }
+      td { padding: 10px 14px; border-top: 1px solid #f0f0ee; }
+      .btn { font: inherit; font-size: 13px; padding: 7px 13px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+      .btn-primary { background: #20a676; color: #fff; font-weight: 600; }
+      .btn-outline { background: #fff; border-color: #d5d8d4; }
+      .field { display: block; margin-bottom: 12px; font-size: 13px; }
+      .field span { display: block; font-size: 11px; color: #6c757d; margin-bottom: 4px; }
+      .field input, .field select { width: 100%; padding: 7px 9px; border: 1px solid #d5d8d4; border-radius: 6px; font: inherit; }
+      .menu { position: relative; }
+      .menu-list { display: none; position: absolute; top: 34px; right: 0; background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.14); min-width: 190px; z-index: 5; }
+      .menu-list.open { display: block; }
+      .menu-list a { display: block; padding: 8px 14px; color: #212529; text-decoration: none; font-size: 13px; }
+      .scroller { height: 130px; overflow: auto; border: 1px solid #e6e6e6; border-radius: 8px; }
+      .scroller-inner { padding: 10px 14px; }
+      .scroller-inner p { margin: 0 0 10px; font-size: 13px; }
+      .modal-scrim { position: fixed; inset: 0; background: rgba(16,20,22,.5); display: none; }
+      .modal { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); width: 540px; background: #fff; border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.3); display: none; z-index: 10; }
+      .modal.open, .modal-scrim.open { display: block; }
+      .modal-h { padding: 15px 20px; border-bottom: 1px solid #e6e6e6; font-weight: 600; }
+      .modal-b { padding: 18px 20px; }
+      .modal-f { padding: 13px 20px; border-top: 1px solid #e6e6e6; text-align: right; background: #fcfcf5; }
+      iframe { width: 260px; height: 120px; border: 1px solid #e6e6e6; border-radius: 8px; }
+      video { width: 260px; border-radius: 8px; display: block; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="side">
+        <h1>Fixture Procurement</h1>
+        <ul class="nav">
+          <li><a href="/dashboard" class="on">Dashboard</a></li>
+          <li><a href="/requisitions">Requisitions</a></li>
+          <li><a href="/suppliers">Suppliers</a></li>
+        </ul>
+      </aside>
+
+      <main class="main">
+        <div class="row" style="justify-content: space-between; margin-bottom: 16px">
+          <div>
+            <h2 class="brand-title" style="margin: 0 0 2px; font-size: 20px">
+              Dashboard <span class="brand-chip"></span>
+            </h2>
+            <p style="margin: 0; color: #6c757d; font-size: 13px">
+              Cross-origin stylesheet, font and chip image above this line.
+            </p>
+          </div>
+          <div class="menu">
+            <button class="btn btn-outline" id="menu-button" data-testid="account-menu">Account ▾</button>
+            <div class="menu-list" id="menu-list">
+              <a href="/profile">Profile</a>
+              <a href="/team">Team settings</a>
+              <a href="/signout">Sign out</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex: 1">
+            <div class="card">
+              <div class="card-h">Spend by quarter — &lt;canvas&gt; drawn by script</div>
+              <div class="card-b"><canvas id="chart" width="520" height="180"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">WebGL surface</div>
+              <div class="card-b"><canvas id="gl" width="240" height="110"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">Open requisitions</div>
+              <table>
+                <thead>
+                  <tr><th>Requisition</th><th>Requester</th><th>Value</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>REQ-1042</td><td>R. Iyer</td><td>₹ 12,40,500</td><td>Awaiting approval</td></tr>
+                  <tr><td>REQ-1041</td><td>S. Bhatt</td><td>₹ 3,18,900</td><td>Approved</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="width: 292px">
+            <div class="card">
+              <div class="card-h">Cross-origin iframe</div>
+              <div class="card-b"><iframe id="widget" src="CDN_ORIGIN/embedded.html" title="Supplier widget"></iframe></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">Video (poster only)</div>
+              <div class="card-b"><video id="clip" poster="CDN_ORIGIN/poster.png" controls></video></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">Cross-origin image</div>
+              <div class="card-b"><img id="logo" src="CDN_ORIGIN/logo.png" alt="Vendor logo" width="120" height="40" /></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">Shadow DOM component</div>
+              <div class="card-b"><supplier-badge id="badge"></supplier-badge></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">Scrolled container (script sets scrollTop)</div>
+          <div class="card-b">
+            <div class="scroller" id="scroller">
+              <div class="scroller-inner">
+                <p>Line one — above the fold.</p>
+                <p>Line two.</p>
+                <p>Line three.</p>
+                <p id="scroll-target">Line four — the capture should show this one.</p>
+                <p>Line five.</p>
+                <p>Line six.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="modal-scrim" id="scrim"></div>
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Approve requisition">
+      <div class="modal-h">Approve REQ-1042</div>
+      <div class="modal-b">
+        <label class="field">
+          <span>Approver note</span>
+          <input type="text" id="note" placeholder="Visible on the PO" />
+        </label>
+        <label class="field">
+          <span>Cost centre</span>
+          <select id="cost-centre">
+            <option>CC-1180 · Formulation</option>
+            <option>CC-2240 · Manufacturing</option>
+            <option>CC-3310 · Quality</option>
+          </select>
+        </label>
+        <label style="display: flex; gap: 8px; font-size: 13px">
+          <input type="checkbox" id="confirm" />
+          <span>I confirm the budget check</span>
+        </label>
+        <p style="font-size: 12px; color: #6c757d; margin: 14px 0 0" id="pii-line">
+          Raised by k.mehta@acme-pharma.example · +44 20 7946 0958 · Patient ID PT-99311
+        </p>
+      </div>
+      <div class="modal-f">
+        <button class="btn btn-primary" id="approve" data-testid="approve">Approve &amp; raise PO</button>
+      </div>
+    </div>
+
+    <script>
+      // Everything below runs AFTER load. A serialiser that reads page source rather than
+      // the live DOM will miss all of it — which is the point of the fixture.
+
+      // 1. Canvas chart.
+      (function drawChart() {
+        var c = document.getElementById('chart').getContext('2d');
+        var data = [0.42, 0.55, 0.48, 0.66, 0.61, 0.78, 0.71, 0.88];
+        c.fillStyle = '#ffffff';
+        c.fillRect(0, 0, 520, 180);
+        data.forEach(function (v, i) {
+          var h = Math.round(150 * v);
+          c.fillStyle = i % 2 ? '#38ad66' : '#0f929d';
+          c.fillRect(14 + i * 62, 165 - h, 40, h);
+        });
+        c.strokeStyle = '#212529';
+        c.beginPath();
+        c.moveTo(8, 165.5);
+        c.lineTo(512, 165.5);
+        c.stroke();
+      })();
+
+      // 2. WebGL surface.
+      (function drawGl() {
+        var canvas = document.getElementById('gl');
+        var gl = canvas.getContext('webgl', { preserveDrawingBuffer: true })
+          || canvas.getContext('experimental-webgl', { preserveDrawingBuffer: true });
+        if (!gl) { canvas.setAttribute('data-webgl', 'unavailable'); return; }
+        gl.clearColor(0.55, 0.76, 0.25, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        canvas.setAttribute('data-webgl', 'drawn');
+      })();
+
+      // 3. Shadow DOM.
+      (function shadow() {
+        var host = document.getElementById('badge');
+        var root = host.attachShadow({ mode: 'open' });
+        root.innerHTML =
+          '<style>.b{font:600 13px system-ui;color:#0e6468;background:#e4f1f6;' +
+          'padding:8px 12px;border-radius:999px;display:inline-block}</style>' +
+          '<span class="b" data-testid="shadow-badge">Vitalis Labs · qualified</span>';
+      })();
+
+      // 4. Post-interaction state: typed text, chosen option, checked box, open menu,
+      //    open modal, scrolled container.
+      document.getElementById('note').value = 'Cleared against Q3 budget';
+      document.getElementById('cost-centre').selectedIndex = 1;
+      document.getElementById('confirm').checked = true;
+      document.getElementById('menu-list').classList.add('open');
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('scrim').classList.add('open');
+      document.getElementById('scroller').scrollTop = 78;
+
+      // 5. A handler that must not survive into the snapshot.
+      document.getElementById('approve').addEventListener('click', function () {
+        alert('this must never run inside a snapshot');
+      });
+      document.getElementById('approve').setAttribute('onmouseover', "console.log('inline handler')");
+
+      window.__fixtureReady = true;
+    </script>
+  </body>
+</html>

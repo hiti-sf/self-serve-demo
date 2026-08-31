@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  # Branch pushes are covered by the pull_request event; running both doubles every
+  # job on an open PR. `push` is kept for the default branch, which has no PR.
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push supersedes the run in flight: the acceptance gates take minutes, and
+# nobody needs the result for a commit that is already stale.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast gate: everything that does not need a browser.
+  checks:
+    name: Typecheck, tests, demo validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` — package.json's packageManager field pins pnpm, and specifying
+      # it in both places is an error the action refuses to guess its way past.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck every package
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Demos are content authored by non-engineers, so the guarantees are checked
+      # mechanically: schema validity, files present, snapshots script-free with no
+      # external URLs, no PII in snapshot text, and every hotspot selector resolving.
+      - name: Validate demo content
+        run: pnpm validate:demos
+
+      # §11: no credential may be committed, and none may reach a client bundle.
+      - name: Credential check
+        run: pnpm lint:no-secrets
+
+  build:
+    name: Build every target
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` — package.json's packageManager field pins pnpm, and specifying
+      # it in both places is an error the action refuses to guess its way past.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The kiosk launcher is a static Go binary so a booth laptop needs nothing
+      # installed. No modules to cache — it uses only the standard library.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Player, editor, web target and capture extension
+        run: pnpm build
+
+      # This step is the offline guarantee (§8.2), not a style preference: the build
+      # fails if any external URL survives into the bundle.
+      - name: Kiosk bundle
+        run: pnpm build:kiosk --all --all-platforms
+
+      - name: Credential check on the built bundles
+        run: pnpm lint:no-secrets
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiosk-bundle
+          path: builds/kiosk/dist-kiosk
+          retention-days: 14
+
+  # Browser-driven acceptance gates (§12).
+  acceptance:
+    name: Acceptance (${{ matrix.gate }})
+    runs-on: ubuntu-latest
+    # These gates drive a browser, and a browser that wedges would otherwise hold the
+    # runner for six hours. Every gate finishes in two to four minutes.
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [capture, player, web, kiosk, editor]
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `version:` — package.json's packageManager field pins pnpm, and specifying
+      # it in both places is an error the action refuses to guess its way past.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-go@v5
+        if: matrix.gate == 'kiosk'
+        with:
+          go-version: '1.22'
+          cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      # The runner image ships Google Chrome. Resolve it rather than installing a
+      # browser, and fail loudly if the image ever stops providing one.
+      - name: Locate the browser
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$BROWSER" ]; then
+            echo "No Chrome or Chromium on this runner; the acceptance gates need one." >&2
+            exit 1
+          fi
+          echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      # …except for the capture gate, which has to load an unpacked extension. Branded
+      # Chrome dropped support for --load-extension and the feature flag that used to
+      # re-enable it, so the tab lands on an error page and nothing installs. Chromium
+      # never carried that restriction.
+      - name: Install Chromium (capture gate only)
+        if: matrix.gate == 'capture'
+        timeout-minutes: 6
+        run: |
+          set -x
+          INSTALL_DIR="$RUNNER_TEMP/browser"
+          # chromium first, since it certainly has no --load-extension restriction;
+          # Chrome for Testing second, which is the supported automation build.
+          npx --yes @puppeteer/browsers install chromium@latest --path "$INSTALL_DIR" \
+            || npx --yes @puppeteer/browsers install chrome@stable --path "$INSTALL_DIR"
+          # Resolve from the filesystem rather than by parsing stdout: the install layout
+          # is stable, the log format is not.
+          BROWSER="$(find "$INSTALL_DIR" -type f \( -name chrome -o -name 'chrome-headless-shell' \) -perm -u+x | head -1)"
+          if [ -z "$BROWSER" ]; then
+            echo "No browser binary under $INSTALL_DIR after install:" >&2
+            find "$INSTALL_DIR" -maxdepth 5 >&2
+            exit 1
+          fi
+          echo "CHROMIUM_PATH=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      # M1: a real capture through all four extension contexts against a fixture that
+      # carries every hard case §5 names, then the snapshot rendered with DNS dead.
+      - name: M1 — capture extension
+        if: matrix.gate == 'capture'
+        timeout-minutes: 10
+        run: pnpm smoke:capture
+
+      # M2: snapshots render sandboxed, hotspots anchor by selector and survive a
+      # resize, keyboard nav and chapters work, a broken snapshot falls back to its image.
+      - name: M2 — player
+        if: matrix.gate == 'player'
+        run: |
+          pnpm build:player
+          for demo in demos/inlumin/*/; do node scripts/smoke-player.mjs "$demo"; done
+
+      # M4: the gate creates a lead, the demo unlocks, the event stream lands with the
+      # leadId, and abandonment is derivable.
+      - name: M4 — gated web target
+        if: matrix.gate == 'web'
+        run: pnpm smoke:web
+
+      # M5: the bundle runs from a copied folder with DNS dead, events queue locally and
+      # sync once an endpoint is reachable.
+      - name: M5 — kiosk bundle
+        if: matrix.gate == 'kiosk'
+        run: pnpm smoke:kiosk
+
+      # M3: a full 8+ step flow authored through the UI and published, no JSON by hand.
+      - name: M3 — editor
+        if: matrix.gate == 'editor'
+        run: pnpm smoke:editor
+
+      # The capture gate's real output is a pair of images a human compares by eye.
+      - uses: actions/upload-artifact@v4
+        if: always() && (matrix.gate == 'player' || matrix.gate == 'capture')
+        with:
+          name: smoke-artefacts-${{ matrix.gate }}
+          path: .smoke
+          retention-days: 7
+          if-no-files-found: ignore
+          # .smoke is a dotfile, and this action skips hidden paths by default — without
+          # this the upload silently finds nothing, which is how the capture gate's
+          # before/after images went missing on every run so far.
+          include-hidden-files: true

@@ -1,0 +1,24 @@
+{
+  "name": "@demo-platform/kiosk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/build-kiosk.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@demo-platform/player": "workspace:*",
+    "@demo-platform/shared": "workspace:*",
+    "react": "19.0.8",
+    "react-dom": "19.0.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "5.2.0",
+    "vite": "7.3.6"
+  }
+}

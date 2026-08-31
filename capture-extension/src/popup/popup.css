@@ -1,0 +1,83 @@
+:root {
+  --olive: #20a676;
+  --teal: #1b91a3;
+  --ink: #212529;
+  --muted: #6c757d;
+  --line: #e6e6e6;
+  --warm: #fcfcf5;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 380px;
+  margin: 0;
+  padding: 16px;
+  font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: #fff;
+}
+
+h1 { font-size: 15px; margin: 0; }
+h2 { font-size: 13px; margin: 16px 0 4px; }
+.sub { color: var(--muted); font-size: 11px; margin: 4px 0 12px; }
+
+button.primary {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--teal), var(--olive));
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+button.primary:disabled { opacity: 0.55; cursor: progress; }
+
+.status { min-height: 18px; font-size: 12px; margin: 8px 0 0; }
+.status[data-kind="error"] { color: #b3261e; }
+.status[data-kind="ok"] { color: var(--olive); }
+
+#preview {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 12px 0 8px;
+  background: var(--warm);
+}
+
+dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0 0 10px; font-size: 12px; }
+dt { color: var(--muted); }
+dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+details { border-top: 1px solid var(--line); padding-top: 8px; font-size: 12px; }
+summary { cursor: pointer; }
+ul { list-style: none; margin: 6px 0 0; padding: 0; }
+li { padding: 4px 0; border-bottom: 1px solid var(--line); }
+
+.pii-item { display: flex; gap: 8px; align-items: flex-start; }
+.pii-kind {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+}
+.pii-match { font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+.pii-context { color: var(--muted); font-size: 11px; }
+
+.field { display: block; margin: 12px 0; font-size: 12px; }
+.field span { display: block; color: var(--muted); margin-bottom: 4px; }
+.field input {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+}
+.row { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; }
+code { background: var(--warm); padding: 1px 4px; border-radius: 3px; }
